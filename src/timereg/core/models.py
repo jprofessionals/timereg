@@ -19,6 +19,9 @@ class Project(BaseModel):
     name: str
     slug: str
     config_path: str | None = None
+    weekly_hours: float | None = None
+    monthly_hours: float | None = None
+    allowed_tags: list[str] | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -156,6 +159,84 @@ class AllProjectsFetchResult(BaseModel):
     suggested_split: list[SuggestedSplitEntry] = Field(default_factory=list)
 
 
+# --- Report models ---
+
+
+class DayDetail(BaseModel):
+    """Entries for a single day in a summary."""
+
+    date: date
+    entries: list[Entry] = Field(default_factory=list)
+    total_hours: float = 0.0
+
+
+class ProjectSummary(BaseModel):
+    """Per-project summary with budget comparison."""
+
+    project: Project
+    days: list[DayDetail] = Field(default_factory=list)
+    total_hours: float = 0.0
+    budget_weekly: float | None = None
+    budget_monthly: float | None = None
+    budget_percent: float | None = None
+
+
+class SummaryReport(BaseModel):
+    """Complete summary report for a period."""
+
+    period_start: date
+    period_end: date
+    period_label: str
+    projects: list[ProjectSummary] = Field(default_factory=list)
+    total_hours: float = 0.0
+
+
+# --- Status models ---
+
+
+class ProjectStatus(BaseModel):
+    """Per-project status with live git data."""
+
+    project: Project
+    today_hours: float = 0.0
+    today_entry_count: int = 0
+    unregistered_commits: int = 0
+    week_hours: float = 0.0
+    budget_weekly: float | None = None
+    budget_percent: float | None = None
+
+
+class StatusReport(BaseModel):
+    """Status dashboard across all projects."""
+
+    date: date
+    projects: list[ProjectStatus] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+# --- Check models ---
+
+
+class DayCheck(BaseModel):
+    """Check result for a single day."""
+
+    date: date
+    total_hours: float = 0.0
+    unregistered_commits: int = 0
+    warnings: list[str] = Field(default_factory=list)
+    ok: bool = True
+
+
+class CheckReport(BaseModel):
+    """Check report for a date range."""
+
+    date_from: date
+    date_to: date
+    days: list[DayCheck] = Field(default_factory=list)
+    budget_warnings: list[str] = Field(default_factory=list)
+    summary_total: float = 0.0
+
+
 # --- Configuration models ---
 
 
@@ -167,6 +248,7 @@ class GlobalConfig(BaseModel):
     timezone: str = "Europe/Oslo"
     user_name: str | None = None
     user_email: str | None = None
+    max_daily_hours: float = 12.0
 
 
 class ProjectConfig(BaseModel):
