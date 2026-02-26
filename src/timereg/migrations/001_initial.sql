@@ -22,6 +22,8 @@ CREATE INDEX idx_project_repos_project ON project_repos(project_id);
 
 CREATE TABLE entries (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    -- No ON DELETE CASCADE: entries are preserved when projects are removed
+    -- (keep_entries=True default). Manual deletion handled in projects.remove_project().
     project_id      INTEGER NOT NULL REFERENCES projects(id),
     git_user_name   TEXT NOT NULL,
     git_user_email  TEXT NOT NULL,

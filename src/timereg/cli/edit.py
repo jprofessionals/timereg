@@ -4,27 +4,14 @@ from __future__ import annotations
 
 import json
 from datetime import date
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 import typer
 
+from timereg.cli import entry_to_dict
 from timereg.cli.app import app, state
 from timereg.core.entries import edit_entry
 from timereg.core.time_parser import parse_time
-
-if TYPE_CHECKING:
-    from timereg.core.models import Entry
-
-
-def _entry_to_dict(entry: Entry) -> dict[str, object]:
-    """Convert an Entry to a JSON-serialisable dict."""
-    d = entry.model_dump()
-    d["date"] = str(d["date"])
-    if d.get("created_at"):
-        d["created_at"] = str(d["created_at"])
-    if d.get("updated_at"):
-        d["updated_at"] = str(d["updated_at"])
-    return d
 
 
 @app.command()
@@ -77,7 +64,7 @@ def edit(
         raise typer.Exit(1) from None
 
     if state.output_format == "json":
-        typer.echo(json.dumps(_entry_to_dict(updated), indent=2))
+        typer.echo(json.dumps(entry_to_dict(updated), indent=2))
     else:
         typer.echo(f"Updated entry {updated.id}")
         typer.echo(f"  Date: {updated.date}")

@@ -80,7 +80,9 @@ def _insert_entry(
     row = db.execute(
         f"SELECT {_ENTRY_COLUMNS} FROM entries WHERE id=?", (cursor.lastrowid,)
     ).fetchone()
-    assert row is not None
+    if row is None:
+        msg = "Failed to retrieve inserted entry"
+        raise RuntimeError(msg)
     return _row_to_entry(row)
 
 
@@ -218,7 +220,9 @@ def edit_entry(
 
     db.commit()
     result = db.execute(f"SELECT {_ENTRY_COLUMNS} FROM entries WHERE id=?", (entry_id,)).fetchone()
-    assert result is not None
+    if result is None:
+        msg = f"Entry {entry_id} not found after update"
+        raise RuntimeError(msg)
     return _row_to_entry(result)
 
 
@@ -269,7 +273,9 @@ def undo_last(db: Database, user_email: str) -> Entry | None:
         return None
 
     entry = _row_to_entry(row)
-    assert entry.id is not None
+    if entry.id is None:
+        msg = "Entry has no ID"
+        raise RuntimeError(msg)
     db.execute("DELETE FROM entries WHERE id=?", (entry.id,))
     db.commit()
     return entry

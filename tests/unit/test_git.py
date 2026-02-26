@@ -10,11 +10,11 @@ from timereg.core.git import (
 )
 
 SAMPLE_LOG_OUTPUT = (
-    "a1b2c3d4|feat: add signaling|Mr Bell|bell@jpro.no|2026-02-25T09:34:12+01:00\n"
+    "a1b2c3d4\x00feat: add signaling\x00Mr Bell\x00bell@jpro.no\x002026-02-25T09:34:12+01:00\n"
     "3\t1\tsrc/signaling.py\n"
     "1\t0\ttests/test_signaling.py\n"
     "\n"
-    "b2c3d4e5|test: integration tests|Mr Bell|bell@jpro.no|2026-02-25T11:02:45+01:00\n"
+    "b2c3d4e5\x00test: integration tests\x00Mr Bell\x00bell@jpro.no\x002026-02-25T11:02:45+01:00\n"
     "50\t0\ttests/test_integration.py\n"
 )
 
@@ -37,7 +37,7 @@ class TestParseLogOutput:
         assert commits == []
 
     def test_parse_commit_no_files(self) -> None:
-        output = "abc123|empty commit|User|user@test.com|2026-02-25T10:00:00+01:00\n"
+        output = "abc123\x00empty commit\x00User\x00user@test.com\x002026-02-25T10:00:00+01:00\n"
         commits = parse_log_output(output, repo_path=".")
         assert len(commits) == 1
         assert commits[0].files_changed == 0

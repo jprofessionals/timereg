@@ -14,8 +14,8 @@ from timereg.core.models import (
 
 logger = logging.getLogger(__name__)
 
-_COMMIT_FORMAT = "%H|%s|%an|%ae|%aI"
-_COMMIT_SEPARATOR = "|"
+_COMMIT_FORMAT = "%H%x00%s%x00%an%x00%ae%x00%aI"
+_COMMIT_SEPARATOR = "\x00"
 
 
 def _run_git(args: list[str], cwd: str) -> str:
@@ -58,7 +58,7 @@ def parse_log_output(output: str, repo_path: str) -> list[CommitInfo]:
 
         while i < len(lines):
             stat_line = lines[i].strip()
-            if not stat_line or _COMMIT_SEPARATOR in stat_line:
+            if not stat_line or "\x00" in stat_line:
                 break
             stat_parts = stat_line.split("\t")
             if len(stat_parts) == 3:

@@ -23,9 +23,6 @@ class Database:
     def executemany(self, sql: str, params: list[tuple[Any, ...]]) -> sqlite3.Cursor:
         return self._conn.executemany(sql, params)
 
-    def executescript(self, sql: str) -> None:
-        self._conn.executescript(sql)
-
     def commit(self) -> None:
         self._conn.commit()
 
@@ -69,6 +66,16 @@ class Database:
 
         for version, sql in self._get_migration_files():
             if version > current_version:
-                self.executescript(sql)
-                self.execute("INSERT INTO schema_version (version) VALUES (?)", (version,))
-                self.commit()
+                self._conn.execute("BEGIN")
+                try:
+                    for statement in sql.split(";"):
+                        statement = statement.strip()
+                        if statement:
+                            self._conn.execute(statement)
+                    self._conn.execute(
+                        "INSERT INTO schema_version (version) VALUES (?)", (version,)
+                    )
+                    self._conn.commit()
+                except Exception:
+                    self._conn.rollback()
+                    raise

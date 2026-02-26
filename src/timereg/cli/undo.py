@@ -7,22 +7,12 @@ import subprocess
 
 import typer
 
+from timereg.cli import entry_to_dict
 from timereg.cli.app import app, state
 from timereg.core.config import find_project_config, load_project_config
 from timereg.core.entries import undo_last
 from timereg.core.git import resolve_git_user
-from timereg.core.models import Entry, GitUser
-
-
-def _entry_to_dict(entry: Entry) -> dict[str, object]:
-    """Convert an Entry to a JSON-serialisable dict."""
-    d = entry.model_dump()
-    d["date"] = str(d["date"])
-    if d.get("created_at"):
-        d["created_at"] = str(d["created_at"])
-    if d.get("updated_at"):
-        d["updated_at"] = str(d["updated_at"])
-    return d
+from timereg.core.models import GitUser
 
 
 @app.command()
@@ -52,7 +42,7 @@ def undo() -> None:
         return
 
     if state.output_format == "json":
-        typer.echo(json.dumps({"undone": _entry_to_dict(undone)}, indent=2))
+        typer.echo(json.dumps({"undone": entry_to_dict(undone)}, indent=2))
     else:
         typer.echo(f"Undone entry {undone.id}")
         typer.echo(f"  Date: {undone.date}")

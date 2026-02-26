@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import os
 from pathlib import Path
 from typing import Annotated
@@ -57,6 +58,7 @@ def main(
     )
 
     state.db = Database(resolved_db_path)
+    atexit.register(state.db.close)
     state.db.migrate()
     state.verbose = verbose
     state.output_format = output_format

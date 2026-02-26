@@ -7,8 +7,12 @@ import subprocess
 from datetime import date
 from typing import TYPE_CHECKING, Annotated
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 import typer
 
+from timereg.cli import entry_to_dict
 from timereg.cli.app import app, state
 from timereg.core.config import find_project_config, load_project_config
 from timereg.core.entries import create_entry
@@ -16,20 +20,6 @@ from timereg.core.git import resolve_git_user
 from timereg.core.models import CommitInfo, GitUser
 from timereg.core.projects import auto_register_project, get_project
 from timereg.core.time_parser import parse_time
-
-if TYPE_CHECKING:
-    from timereg.core.models import Entry
-
-
-def _entry_to_dict(entry: Entry) -> dict[str, object]:
-    """Convert an Entry to a JSON-serialisable dict."""
-    d = entry.model_dump()
-    d["date"] = str(d["date"])
-    if d.get("created_at"):
-        d["created_at"] = str(d["created_at"])
-    if d.get("updated_at"):
-        d["updated_at"] = str(d["updated_at"])
-    return d
 
 
 @app.command()
@@ -84,33 +74,34 @@ def register(
     if tags:
         tag_list = [t.strip() for t in tags.split(",") if t.strip()]
 
+    # Resolve project config and repo paths (loaded once, reused below)
+    config_path = find_project_config()
+    repo_paths: list[Path] = []
+    if config_path is not None:
+        project_config = load_project_config(config_path)
+        repo_paths = project_config.resolve_repo_paths(config_path.parent)
+
     # Resolve project
     project = None
-    config_path = find_project_config()
-
     if project_slug:
         project = get_project(state.db, project_slug)
         if project is None:
             typer.echo(f"Error: Project '{project_slug}' not found.", err=True)
             raise typer.Exit(1)
     elif config_path is not None:
-        project_config = load_project_config(config_path)
-        config_dir = config_path.parent
-        repo_paths = project_config.resolve_repo_paths(config_dir)
         project = auto_register_project(state.db, project_config, config_path, repo_paths)
     else:
         typer.echo("Error: No .timetracker.toml found. Use --project to specify one.", err=True)
         raise typer.Exit(1)
 
-    assert project is not None
+    if project is None:
+        typer.echo("Error: Could not resolve project.", err=True)
+        raise typer.Exit(1)
     project_id = project.id or 0
 
-    # Resolve git user
+    # Resolve git user from the first repo path
     user: GitUser
-    if config_path is not None:
-        project_config = load_project_config(config_path)
-        config_dir = config_path.parent
-        repo_paths = project_config.resolve_repo_paths(config_dir)
+    if repo_paths:
         try:
             user = resolve_git_user(str(repo_paths[0]))
         except (subprocess.CalledProcessError, IndexError):
@@ -152,9 +143,9 @@ def register(
     # Output
     if state.output_format == "json":
         if isinstance(result, list):
-            typer.echo(json.dumps([_entry_to_dict(e) for e in result], indent=2))
+            typer.echo(json.dumps([entry_to_dict(e) for e in result], indent=2))
         else:
-            typer.echo(json.dumps(_entry_to_dict(result), indent=2))
+            typer.echo(json.dumps(entry_to_dict(result), indent=2))
     else:
         if isinstance(result, list):
             primary = result[0]

@@ -4,32 +4,19 @@ from __future__ import annotations
 
 import json
 from datetime import date
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
+from timereg.cli import entry_to_dict
 from timereg.cli.app import app, state
 from timereg.core.config import find_project_config, load_project_config
 from timereg.core.entries import list_entries
 from timereg.core.projects import auto_register_project, get_project
 
-if TYPE_CHECKING:
-    from timereg.core.models import Entry
-
 console = Console()
-
-
-def _entry_to_dict(entry: Entry) -> dict[str, object]:
-    """Convert an Entry to a JSON-serialisable dict."""
-    d = entry.model_dump()
-    d["date"] = str(d["date"])
-    if d.get("created_at"):
-        d["created_at"] = str(d["created_at"])
-    if d.get("updated_at"):
-        d["updated_at"] = str(d["updated_at"])
-    return d
 
 
 @app.command("list")
@@ -81,7 +68,7 @@ def list_cmd(
     )
 
     if state.output_format == "json":
-        typer.echo(json.dumps([_entry_to_dict(e) for e in entries], indent=2))
+        typer.echo(json.dumps([entry_to_dict(e) for e in entries], indent=2))
         return
 
     if not entries:
