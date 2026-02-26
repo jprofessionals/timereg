@@ -19,15 +19,10 @@ if TYPE_CHECKING:
 
 
 def _format_budget_bar(percent: float, width: int = 20) -> str:
-    """Render a simple ASCII budget bar like [=========>          ] 50%."""
-    filled = round(percent / 100 * width)
-    filled = min(filled, width)
-    bar = "=" * filled
-    if filled < width:
-        bar += ">"
-        bar = bar[:width]
-    empty = width - len(bar)
-    return f"[{bar}{' ' * empty}] {percent:.0f}%"
+    """Render a simple ASCII budget bar. Delegates to shared helper."""
+    from timereg.cli import format_budget_bar
+
+    return format_budget_bar(percent, width)
 
 
 @app.command()
@@ -71,7 +66,7 @@ def status(
         global_config = load_global_config(ensure_global_config())
         if global_config.user_email:
             user_email = global_config.user_email
-    except Exception:
+    except (OSError, ValueError, KeyError):
         pass
 
     report = get_status(

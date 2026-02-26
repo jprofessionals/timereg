@@ -109,7 +109,7 @@ def check(
             user_email = global_config.user_email
         if global_config.max_daily_hours is not None:
             max_daily_hours = global_config.max_daily_hours
-    except Exception:
+    except (OSError, ValueError, KeyError):
         pass
 
     report = run_checks(

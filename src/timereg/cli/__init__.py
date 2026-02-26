@@ -8,6 +8,18 @@ if TYPE_CHECKING:
     from timereg.core.models import Entry
 
 
+def format_budget_bar(percent: float, width: int = 20) -> str:
+    """Render a simple ASCII budget bar like [=========>          ] 50%."""
+    filled = round(percent / 100 * width)
+    filled = min(filled, width)
+    bar = "=" * filled
+    if filled < width:
+        bar += ">"
+        bar = bar[:width]
+    empty = width - len(bar)
+    return f"[{bar}{' ' * empty}] {percent:.0f}%"
+
+
 def entry_to_dict(entry: Entry) -> dict[str, object]:
     """Convert an Entry to a JSON-serialisable dict."""
     d = entry.model_dump()

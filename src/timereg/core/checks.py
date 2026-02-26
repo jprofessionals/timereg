@@ -194,6 +194,7 @@ def run_checks(
 
         # Check: unregistered commits
         current_str = current.isoformat()
+        day_unregistered = 0
         for project in projects:
             pid = project.id
             repo_paths = repo_paths_by_project.get(pid, []) if pid is not None else []
@@ -204,6 +205,7 @@ def run_checks(
                 user_email,
                 current_str,
             )
+            day_unregistered += unreg
             if unreg > 0:
                 day_warnings.append(
                     f"{unreg} unregistered commits for {project.name} on {current.isoformat()}"
@@ -215,7 +217,7 @@ def run_checks(
             DayCheck(
                 date=current,
                 total_hours=day_hours,
-                unregistered_commits=0,  # filled per-project above via warnings
+                unregistered_commits=day_unregistered,
                 warnings=day_warnings,
                 ok=ok,
             )
@@ -226,25 +228,29 @@ def run_checks(
     # Budget warnings: compare total hours per project for the range
     budget_warnings: list[str] = []
     for project in projects:
+        proj_entries = list_entries(
+            db,
+            project_id=project.id,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        proj_total = sum(e.hours for e in proj_entries)
+
         if project.weekly_hours is not None and project.weekly_hours > 0:
-            proj_entries = list_entries(
-                db,
-                project_id=project.id,
-                date_from=date_from,
-                date_to=date_to,
-            )
-            proj_total = sum(e.hours for e in proj_entries)
             pct = (proj_total / project.weekly_hours) * 100
-            if pct < 100:
-                budget_warnings.append(
-                    f"{project.slug}: {proj_total}h of {project.weekly_hours}h "
-                    f"weekly budget ({pct:.0f}%)"
-                )
-            elif pct > 100:
-                budget_warnings.append(
-                    f"{project.slug}: {proj_total}h of {project.weekly_hours}h "
-                    f"weekly budget ({pct:.0f}%) - over budget"
-                )
+            label = "over budget" if pct > 100 else ""
+            budget_warnings.append(
+                f"{project.slug}: {proj_total}h of {project.weekly_hours}h "
+                f"weekly budget ({pct:.0f}%)" + (f" - {label}" if label else "")
+            )
+
+        if project.monthly_hours is not None and project.monthly_hours > 0:
+            pct = (proj_total / project.monthly_hours) * 100
+            label = "over budget" if pct > 100 else ""
+            budget_warnings.append(
+                f"{project.slug}: {proj_total}h of {project.monthly_hours}h "
+                f"monthly budget ({pct:.0f}%)" + (f" - {label}" if label else "")
+            )
 
     return CheckReport(
         date_from=date_from,
