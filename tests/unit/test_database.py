@@ -71,7 +71,7 @@ class TestMigrations:
         db.migrate()
         result = db.execute("SELECT MAX(version) FROM schema_version").fetchone()
         assert result is not None
-        assert result[0] == 1
+        assert result[0] == 2
         db.close()
 
     def test_migrate_is_idempotent(self, tmp_path: Path) -> None:
@@ -80,7 +80,7 @@ class TestMigrations:
         db.migrate()  # should not raise
         result = db.execute("SELECT COUNT(*) FROM schema_version").fetchone()
         assert result is not None
-        assert result[0] == 1
+        assert result[0] == 2
         db.close()
 
     def test_migrate_applies_pending_only(self, tmp_path: Path) -> None:
@@ -89,6 +89,36 @@ class TestMigrations:
         version = db.execute("SELECT MAX(version) FROM schema_version").fetchone()
         assert version is not None
         assert version[0] >= 1
+        db.close()
+
+    def test_migrate_adds_budget_columns(self, tmp_path: Path) -> None:
+        db = Database(tmp_path / "test.db")
+        db.migrate()
+        # Insert a project and verify budget columns exist and are nullable
+        db.execute(
+            "INSERT INTO projects (name, slug, weekly_hours, monthly_hours) VALUES (?, ?, ?, ?)",
+            ("Test", "test", 20.0, 80.0),
+        )
+        db.commit()
+        row = db.execute(
+            "SELECT weekly_hours, monthly_hours FROM projects WHERE slug='test'"
+        ).fetchone()
+        assert row is not None
+        assert row[0] == 20.0
+        assert row[1] == 80.0
+        db.close()
+
+    def test_migrate_adds_allowed_tags_column(self, tmp_path: Path) -> None:
+        db = Database(tmp_path / "test.db")
+        db.migrate()
+        db.execute(
+            "INSERT INTO projects (name, slug, allowed_tags) VALUES (?, ?, ?)",
+            ("Test", "test", '["dev","review"]'),
+        )
+        db.commit()
+        row = db.execute("SELECT allowed_tags FROM projects WHERE slug='test'").fetchone()
+        assert row is not None
+        assert row[0] == '["dev","review"]'
         db.close()
 
 
