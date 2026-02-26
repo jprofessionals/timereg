@@ -4,13 +4,19 @@ from __future__ import annotations
 
 import logging
 import subprocess
+from typing import TYPE_CHECKING
 
 from timereg.core.models import (
     BranchInfo,
     CommitInfo,
+    FetchResult,
     GitUser,
+    RepoFetchResult,
     WorkingTreeStatus,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -160,3 +166,62 @@ def resolve_git_user(repo_path: str) -> GitUser:
     name = _run_git(["config", "user.name"], cwd=repo_path).strip()
     email = _run_git(["config", "user.email"], cwd=repo_path).strip()
     return GitUser(name=name, email=email)
+
+
+def fetch_project_commits(
+    repo_paths: list[Path],
+    target_date: str,
+    user_email: str,
+    registered_hashes: set[str],
+    user: GitUser,
+    project_name: str,
+    project_slug: str,
+    config_dir: Path | None = None,
+    timezone: str = "Europe/Oslo",
+    merge_commits: bool = False,
+) -> FetchResult:
+    """Fetch commits across all repos for a project, with branch and tree status."""
+    repo_results: list[RepoFetchResult] = []
+
+    for repo_path in repo_paths:
+        if not repo_path.is_dir():
+            logger.warning("Repo path does not exist, skipping: %s", repo_path)
+            continue
+
+        repo_str = str(repo_path)
+        try:
+            commits = fetch_commits(
+                repo_path=repo_str,
+                target_date=target_date,
+                user_email=user_email,
+                timezone=timezone,
+                merge_commits=merge_commits,
+                registered_hashes=registered_hashes,
+            )
+        except subprocess.CalledProcessError:
+            logger.warning("Failed to fetch commits from %s, skipping", repo_path)
+            continue
+
+        branch = get_branch_info(repo_str, target_date)
+        wt_status = get_working_tree_status(repo_str)
+
+        relative = str(repo_path.relative_to(config_dir)) if config_dir else str(repo_path)
+
+        repo_results.append(
+            RepoFetchResult(
+                relative_path=relative,
+                absolute_path=repo_str,
+                branch=branch.current,
+                branch_activity=branch.activity,
+                uncommitted=wt_status,
+                commits=commits,
+            )
+        )
+
+    return FetchResult(
+        project_name=project_name,
+        project_slug=project_slug,
+        date=target_date,
+        user=user,
+        repos=repo_results,
+    )

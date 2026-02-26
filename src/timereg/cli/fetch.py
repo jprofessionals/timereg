@@ -5,21 +5,64 @@ from __future__ import annotations
 import json
 import subprocess
 from datetime import date
-from typing import Annotated, Any
+from typing import Annotated
 
 import typer
 
 from timereg.cli.app import app, state
 from timereg.core.config import find_project_config, load_project_config
 from timereg.core.entries import get_registered_commit_hashes
-from timereg.core.git import (
-    fetch_commits,
-    get_branch_info,
-    get_working_tree_status,
-    resolve_git_user,
-)
-from timereg.core.models import GitUser
+from timereg.core.git import fetch_project_commits, resolve_git_user
+from timereg.core.models import FetchResult, GitUser, WorkingTreeStatus
 from timereg.core.projects import auto_register_project
+
+
+def _format_wt_status(wt: WorkingTreeStatus) -> str:
+    """Format working tree status as a short string."""
+    if wt.staged_files == 0 and wt.unstaged_files == 0:
+        return "clean"
+    parts: list[str] = []
+    if wt.staged_files > 0:
+        parts.append(f"{wt.staged_files} staged")
+    if wt.unstaged_files > 0:
+        parts.append(f"{wt.unstaged_files} unstaged")
+    return ", ".join(parts)
+
+
+def _format_stat(insertions: int, deletions: int, files_changed: int) -> str:
+    """Format commit stat line like (+87 -12, 4 files)."""
+    parts: list[str] = []
+    if insertions > 0:
+        parts.append(f"+{insertions}")
+    if deletions > 0:
+        parts.append(f"-{deletions}")
+    if not parts:
+        parts.append("+0")
+    return f"({' '.join(parts)}, {files_changed} file{'s' if files_changed != 1 else ''})"
+
+
+def _print_text_output(result: FetchResult) -> None:
+    """Print fetch result as formatted text."""
+    total_commits = sum(len(r.commits) for r in result.repos)
+    typer.echo(f"Unregistered commits for {result.project_name} ({result.date}):\n")
+
+    if not result.repos:
+        typer.echo("  (no repos)")
+        return
+
+    for repo in result.repos:
+        wt_label = _format_wt_status(repo.uncommitted)
+        typer.echo(f"  {repo.relative_path} ({repo.branch}) - {wt_label}")
+        if repo.commits:
+            for c in repo.commits:
+                stat = _format_stat(c.insertions, c.deletions, c.files_changed)
+                typer.echo(f"    {c.hash[:8]}  {c.message}    {stat}")
+        else:
+            typer.echo("    (no commits)")
+        typer.echo("")
+
+    if total_commits == 0:
+        typer.echo("  No unregistered commits found.")
 
 
 @app.command()
@@ -56,46 +99,18 @@ def fetch(
 
         registered = get_registered_commit_hashes(state.db, project.id or 0)
 
-        repos: list[dict[str, Any]] = []
-        for repo_path in repo_paths:
-            if not repo_path.is_dir():
-                continue
-            commits = fetch_commits(
-                repo_path=str(repo_path),
-                target_date=target_date,
-                user_email=user.email,
-                registered_hashes=registered,
-            )
-            branch = get_branch_info(str(repo_path), target_date)
-            wt_status = get_working_tree_status(str(repo_path))
-            repos.append(
-                {
-                    "relative_path": str(repo_path.relative_to(config_dir)),
-                    "absolute_path": str(repo_path),
-                    "branch": branch.current,
-                    "branch_activity": branch.activity,
-                    "uncommitted": wt_status.model_dump(),
-                    "commits": [c.model_dump() for c in commits],
-                }
-            )
+        result = fetch_project_commits(
+            repo_paths=repo_paths,
+            target_date=target_date,
+            user_email=user.email,
+            registered_hashes=registered,
+            user=user,
+            project_name=project.name,
+            project_slug=project.slug,
+            config_dir=config_dir,
+        )
 
         if state.output_format == "json":
-            output = {
-                "project_name": project.name,
-                "project_slug": project.slug,
-                "date": target_date,
-                "user": user.model_dump(),
-                "repos": repos,
-            }
-            typer.echo(json.dumps(output, indent=2))
+            typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
         else:
-            typer.echo(f"Project: {project.name} ({project.slug})")
-            typer.echo(f"Date: {target_date}")
-            typer.echo(f"User: {user.name} <{user.email}>")
-            total_commits = sum(len(r["commits"]) for r in repos)
-            typer.echo(f"Unregistered commits: {total_commits}")
-            for repo in repos:
-                if repo["commits"]:
-                    typer.echo(f"\n  {repo['relative_path']} ({repo['branch']}):")
-                    for c in repo["commits"]:
-                        typer.echo(f"    {c['hash'][:8]} {c['message']}")
+            _print_text_output(result)
