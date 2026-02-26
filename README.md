@@ -29,6 +29,9 @@ cd timereg
 
 # Install with uv (adds `timereg` to your PATH)
 uv tool install -e .
+
+# After pulling changes, reinstall to pick up new code
+uv tool install -e . --force
 ```
 
 ### Set Up a Project

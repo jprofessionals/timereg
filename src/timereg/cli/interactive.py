@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from timereg.core.entries import create_entry
-from timereg.core.projects import add_project, list_projects
+from timereg.core.projects import add_project, list_projects, slugify
 from timereg.core.time_parser import parse_time
 
 if TYPE_CHECKING:
@@ -29,7 +29,8 @@ def run_interactive(db: Database) -> None:
     if not projects:
         console.print("No projects registered yet. Let's create one.\n")
         project_name = typer.prompt("Project name")
-        project_slug = typer.prompt("Project slug (lowercase, hyphens)")
+        suggested_slug = slugify(project_name)
+        project_slug = typer.prompt("Project slug (lowercase, hyphens)", default=suggested_slug)
         try:
             project = add_project(db, name=project_name, slug=project_slug)
         except ValueError as e:

@@ -91,8 +91,9 @@ class TestInteractiveMode:
         env = {"HOME": str(tmp_path / "fakehome")}
         today = date.today().isoformat()
 
-        # Prompts: project name, project slug, date, hours, description, tags
-        interactive_input = f"New Project\nnew-project\n{today}\n1h\nInitial setup\n\n"
+        # Prompts: project name, project slug (Enter accepts default "new-project"),
+        # date, hours, description, tags
+        interactive_input = f"New Project\n\n{today}\n1h\nInitial setup\n\n"
 
         result = runner.invoke(
             app,

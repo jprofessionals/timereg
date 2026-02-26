@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import TYPE_CHECKING
 
 from timereg.core.models import Project
@@ -12,6 +13,15 @@ if TYPE_CHECKING:
 
     from timereg.core.database import Database
     from timereg.core.models import ProjectConfig
+
+
+def slugify(name: str) -> str:
+    """Derive a slug from a project name: lowercase, non-alphanum replaced by hyphens."""
+    slug = name.lower().strip()
+    slug = re.sub(r"[^a-z0-9]+", "-", slug)
+    slug = slug.strip("-")
+    return slug or "project"
+
 
 _INSERT_REPO_SQL = (
     "INSERT INTO project_repos (project_id, absolute_path, relative_path) VALUES (?, ?, ?)"

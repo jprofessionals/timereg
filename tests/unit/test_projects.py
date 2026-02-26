@@ -12,7 +12,64 @@ from timereg.core.projects import (
     get_project,
     list_projects,
     remove_project,
+    slugify,
 )
+
+
+class TestSlugify:
+    def test_simple_name(self) -> None:
+        assert slugify("My Project") == "my-project"
+
+    def test_already_slug(self) -> None:
+        assert slugify("my-project") == "my-project"
+
+    def test_uppercase(self) -> None:
+        assert slugify("LOUD PROJECT") == "loud-project"
+
+    def test_multiple_spaces_and_symbols(self) -> None:
+        assert slugify("  Hello   World!!!  ") == "hello-world"
+
+    def test_norwegian_characters(self) -> None:
+        assert slugify("Ølsalg på Ås") == "lsalg-p-s"
+
+    def test_norwegian_uppercase(self) -> None:
+        assert slugify("ÆØÅ Prosjekt") == "prosjekt"
+
+    def test_emoji(self) -> None:
+        assert slugify("Fun 🎉 Project 🚀") == "fun-project"
+
+    def test_mixed_unicode(self) -> None:
+        assert slugify("Café résumé naïve") == "caf-r-sum-na-ve"
+
+    def test_only_unicode_no_ascii(self) -> None:
+        assert slugify("🎉🚀✨") == "project"
+
+    def test_only_symbols(self) -> None:
+        assert slugify("!!!---???") == "project"
+
+    def test_empty_string(self) -> None:
+        assert slugify("") == "project"
+
+    def test_whitespace_only(self) -> None:
+        assert slugify("   ") == "project"
+
+    def test_numbers_preserved(self) -> None:
+        assert slugify("Project 42") == "project-42"
+
+    def test_leading_trailing_hyphens_stripped(self) -> None:
+        assert slugify("---hello---") == "hello"
+
+    def test_consecutive_non_alphanum_collapsed(self) -> None:
+        assert slugify("a...b___c") == "a-b-c"
+
+    def test_chinese_characters(self) -> None:
+        assert slugify("项目 Alpha") == "alpha"
+
+    def test_single_letter(self) -> None:
+        assert slugify("A") == "a"
+
+    def test_numeric_only(self) -> None:
+        assert slugify("12345") == "12345"
 
 
 @pytest.fixture()
