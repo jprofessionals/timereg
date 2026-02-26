@@ -1,0 +1,10 @@
+[database]
+path = "/custom/path/timereg.db"
+
+[defaults]
+merge_commits = false
+timezone = "Europe/Oslo"
+
+[user]
+name = "Mr Bell"
+email = "bell@jpro.no"

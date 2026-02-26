@@ -1,0 +1,13 @@
+[project]
+name = "Ekvarda Codex"
+slug = "ekvarda"
+
+[repos]
+paths = [".", "./client", "../infra"]
+
+[tags]
+allowed = ["development", "review", "meeting"]
+
+[budget]
+weekly_hours = 20.0
+monthly_hours = 80.0
