@@ -18,7 +18,7 @@ from timereg.core.database import Database
 app = typer.Typer(
     name="timereg",
     help="Git-aware time tracking for developers.",
-    no_args_is_help=True,
+    invoke_without_command=True,
 )
 
 
@@ -36,6 +36,7 @@ state = AppState()
 
 @app.callback()
 def main(
+    ctx: typer.Context,
     db_path: Annotated[str | None, typer.Option("--db-path", help="Override database path")] = None,
     config: Annotated[
         str | None, typer.Option("--config", help="Override global config path")
@@ -60,6 +61,11 @@ def main(
     state.verbose = verbose
     state.output_format = output_format
     state.db_path = resolved_db_path
+
+    if ctx.invoked_subcommand is None:
+        from timereg.cli.interactive import run_interactive
+
+        run_interactive(state.db)
 
 
 # Import subcommands so they register on the app
