@@ -236,6 +236,146 @@ class TestProjectsShow:
         assert "my-app" in result.stdout
 
 
+class TestProjectsAddFromConfig:
+    def test_add_from_current_dir(
+        self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Add a project from .timereg.toml in a directory."""
+        config = git_repo / ".timereg.toml"
+        config.write_text('[project]\nname = "My Repo"\nslug = "my-repo"\n')
+
+        monkeypatch.chdir(git_repo)
+        db_path = str(tmp_path / "test.db")
+        env = {"HOME": str(tmp_path / "fakehome")}
+
+        result = runner.invoke(
+            app,
+            ["--db-path", db_path, "--format", "json", "projects", "add", "."],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert data["name"] == "My Repo"
+        assert data["slug"] == "my-repo"
+        assert data["id"] is not None
+        assert data["config_path"] is not None
+
+    def test_add_from_path_registers_repos(
+        self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Adding from config also registers repo paths."""
+        config = git_repo / ".timereg.toml"
+        config.write_text('[project]\nname = "Repo"\nslug = "repo"\n')
+
+        monkeypatch.chdir(tmp_path)
+        db_path = str(tmp_path / "test.db")
+        env = {"HOME": str(tmp_path / "fakehome")}
+
+        # Add using absolute path
+        result = runner.invoke(
+            app,
+            ["--db-path", db_path, "--format", "json", "projects", "add", str(git_repo)],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+
+        # Show should list repos
+        show_result = runner.invoke(
+            app,
+            ["--db-path", db_path, "--format", "json", "projects", "show", "repo"],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert show_result.exit_code == 0
+        data = json.loads(show_result.stdout)
+        assert len(data["repos"]) > 0
+
+    def test_add_from_path_text_output(
+        self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Text output shows config path and repo count."""
+        config = git_repo / ".timereg.toml"
+        config.write_text('[project]\nname = "Text"\nslug = "text"\n')
+
+        monkeypatch.chdir(git_repo)
+        db_path = str(tmp_path / "test.db")
+        env = {"HOME": str(tmp_path / "fakehome")}
+
+        result = runner.invoke(
+            app,
+            ["--db-path", db_path, "projects", "add", "."],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+        assert "Registered project" in result.stdout
+        assert "text" in result.stdout
+        assert "Config:" in result.stdout
+
+    def test_add_no_config_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Adding from a dir without .timereg.toml fails."""
+        no_config_dir = tmp_path / "empty"
+        no_config_dir.mkdir()
+
+        monkeypatch.chdir(no_config_dir)
+        db_path = str(tmp_path / "test.db")
+
+        result = runner.invoke(
+            app,
+            ["--db-path", db_path, "projects", "add", "."],
+            catch_exceptions=False,
+            env={"HOME": str(tmp_path / "fakehome")},
+        )
+        assert result.exit_code == 1
+        assert ".timereg.toml" in result.stdout or ".timereg.toml" in (result.stderr or "")
+
+    def test_add_no_args_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Calling 'projects add' with no path and no --name/--slug fails."""
+        monkeypatch.chdir(tmp_path)
+        db_path = str(tmp_path / "test.db")
+
+        result = runner.invoke(
+            app,
+            ["--db-path", db_path, "projects", "add"],
+            catch_exceptions=False,
+            env={"HOME": str(tmp_path / "fakehome")},
+        )
+        assert result.exit_code == 1
+
+    def test_add_updates_existing_project(
+        self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Adding from config a second time updates the existing project."""
+        config = git_repo / ".timereg.toml"
+        config.write_text('[project]\nname = "V1"\nslug = "myproj"\n')
+
+        monkeypatch.chdir(git_repo)
+        db_path = str(tmp_path / "test.db")
+        env = {"HOME": str(tmp_path / "fakehome")}
+
+        runner.invoke(
+            app,
+            ["--db-path", db_path, "projects", "add", "."],
+            catch_exceptions=False,
+            env=env,
+        )
+
+        # Update config and re-add
+        config.write_text('[project]\nname = "V2"\nslug = "myproj"\n')
+        result = runner.invoke(
+            app,
+            ["--db-path", db_path, "--format", "json", "projects", "add", "."],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert data["name"] == "V2"
+        assert data["slug"] == "myproj"
+
+
 class TestProjectsRemove:
     def test_remove_project(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Remove a project and verify it is gone."""

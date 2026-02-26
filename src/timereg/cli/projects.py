@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
 import typer
@@ -10,7 +11,14 @@ from rich.console import Console
 from rich.table import Table
 
 from timereg.cli.app import app, state
-from timereg.core.projects import add_project, get_project, list_projects, remove_project
+from timereg.core.config import CONFIG_FILENAME, find_project_config, load_project_config
+from timereg.core.projects import (
+    add_project,
+    auto_register_project,
+    get_project,
+    list_projects,
+    remove_project,
+)
 
 if TYPE_CHECKING:
     from timereg.core.models import Project
@@ -63,10 +71,64 @@ def list_projects_cmd() -> None:
 
 @projects_app.command("add")
 def add_project_cmd(
-    name: Annotated[str, typer.Option("--name", help="Project display name")],
-    slug: Annotated[str, typer.Option("--slug", help="Project slug (lowercase, hyphens)")],
+    path: Annotated[
+        str | None, typer.Argument(help="Path to project directory with .timereg.toml (e.g. '.')")
+    ] = None,
+    name: Annotated[str | None, typer.Option("--name", help="Project display name")] = None,
+    slug: Annotated[
+        str | None, typer.Option("--slug", help="Project slug (lowercase, hyphens)")
+    ] = None,
 ) -> None:
-    """Manually add a project to the registry."""
+    """Add a project to the registry.
+
+    With a path argument (e.g. 'timereg projects add .'), reads the .timereg.toml
+    config and registers the project with its repos.
+
+    With --name and --slug, creates a manual project entry without config or repos.
+    """
+    if path is not None:
+        _add_from_config(path)
+    elif name is not None and slug is not None:
+        _add_manual(name, slug)
+    else:
+        typer.echo(
+            "Error: Provide a path to a project directory, or both --name and --slug.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+
+def _add_from_config(path_str: str) -> None:
+    """Register a project from its .timereg.toml config file."""
+    project_dir = Path(path_str).resolve()
+    config_path = find_project_config(project_dir)
+    if config_path is None:
+        typer.echo(
+            f"Error: No {CONFIG_FILENAME} found in {project_dir} or parent directories.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    project_config = load_project_config(config_path)
+    config_dir = config_path.parent
+    repo_paths = project_config.resolve_repo_paths(config_dir)
+
+    project = auto_register_project(state.db, project_config, config_path, repo_paths)
+
+    if state.output_format == "json":
+        typer.echo(json.dumps(_project_to_dict(project), indent=2))
+    else:
+        typer.echo(f"Registered project '{project.name}' ({project.slug})")
+        typer.echo(f"  ID: {project.id}")
+        typer.echo(f"  Config: {config_path}")
+        if repo_paths:
+            typer.echo(f"  Repos: {len(repo_paths)}")
+            for rp in repo_paths:
+                typer.echo(f"    {rp}")
+
+
+def _add_manual(name: str, slug: str) -> None:
+    """Add a manual project entry without config or repos."""
     try:
         project = add_project(state.db, name=name, slug=slug)
     except ValueError as e:
