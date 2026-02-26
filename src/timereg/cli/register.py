@@ -14,7 +14,7 @@ import typer
 
 from timereg.cli import entry_to_dict
 from timereg.cli.app import app, state
-from timereg.core.config import find_project_config, load_project_config
+from timereg.core.config import find_project_config, load_project_config, no_config_message
 from timereg.core.entries import create_entry
 from timereg.core.git import resolve_git_user
 from timereg.core.models import CommitInfo, GitUser
@@ -91,7 +91,7 @@ def register(
     elif config_path is not None:
         project = auto_register_project(state.db, project_config, config_path, repo_paths)
     else:
-        typer.echo("Error: No .timetracker.toml found. Use --project to specify one.", err=True)
+        typer.echo(f"Error: {no_config_message()}", err=True)
         raise typer.Exit(1)
 
     if project is None:

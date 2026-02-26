@@ -116,14 +116,33 @@ def resolve_db_path(
     return Path(platformdirs.user_data_dir("timereg")) / "timereg.db"
 
 
+def _is_git_repo(path: Path | None = None) -> bool:
+    """Check if the given path (or CWD) is inside a git repository."""
+    check_dir = (path or Path.cwd()).resolve()
+    while True:
+        if (check_dir / ".git").exists():
+            return True
+        if check_dir == check_dir.parent:
+            return False
+        check_dir = check_dir.parent
+
+
+def no_config_message() -> str:
+    """Build an error message for missing .timetracker.toml, with context-aware suggestions."""
+    lines = [f"No {CONFIG_FILENAME} found in current or parent directories."]
+    if _is_git_repo():
+        lines.append(f"Run 'timereg init' to create {CONFIG_FILENAME} in this directory.")
+    else:
+        lines.append(
+            f"Create a {CONFIG_FILENAME} in your project root, or use --project to specify one."
+        )
+    return "\n".join(lines)
+
+
 def require_project_config(start: Path | None = None) -> tuple[Path, ProjectConfig]:
     """Find and load project config, or exit with a warning."""
     config_path = find_project_config(start)
     if config_path is None:
-        print(
-            "Error: No .timetracker.toml found in current or parent directories.\n"
-            "Create a .timetracker.toml in your project root, or use --project to specify one.",
-            file=sys.stderr,
-        )
+        print(f"Error: {no_config_message()}", file=sys.stderr)
         raise SystemExit(1)
     return config_path, load_project_config(config_path)

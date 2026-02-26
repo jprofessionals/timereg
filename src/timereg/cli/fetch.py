@@ -10,7 +10,7 @@ from typing import Annotated
 import typer
 
 from timereg.cli.app import app, state
-from timereg.core.config import find_project_config, load_project_config
+from timereg.core.config import find_project_config, load_project_config, no_config_message
 from timereg.core.entries import get_registered_commit_hashes
 from timereg.core.git import fetch_project_commits, resolve_git_user
 from timereg.core.models import FetchResult, GitUser, WorkingTreeStatus
@@ -80,10 +80,7 @@ def fetch(
 
     config_path = find_project_config()
     if config_path is None and project_slug is None and not fetch_all:
-        typer.echo(
-            "Error: No .timetracker.toml found. Use --project or --all.",
-            err=True,
-        )
+        typer.echo(f"Error: {no_config_message()}", err=True)
         raise typer.Exit(1)
 
     if config_path is not None:

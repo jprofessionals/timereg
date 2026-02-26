@@ -7,6 +7,7 @@ from timereg.core.config import (
     find_project_config,
     load_global_config,
     load_project_config,
+    no_config_message,
     resolve_db_path,
 )
 
@@ -100,6 +101,32 @@ class TestGlobalConfigMaxDailyHours:
         config_file.write_text("[defaults]\n")
         config = load_global_config(config_file)
         assert config.max_daily_hours == 12.0
+
+
+class TestNoConfigMessage:
+    def test_suggests_init_in_git_repo(self, tmp_path: Path) -> None:
+        (tmp_path / ".git").mkdir()
+        with patch("timereg.core.config.Path") as mock_path:
+            mock_path.cwd.return_value = tmp_path
+            msg = no_config_message()
+        assert "timereg init" in msg
+        assert ".timetracker.toml" in msg
+
+    def test_generic_message_outside_git_repo(self, tmp_path: Path) -> None:
+        with patch("timereg.core.config.Path") as mock_path:
+            mock_path.cwd.return_value = tmp_path
+            msg = no_config_message()
+        assert "timereg init" not in msg
+        assert "--project" in msg
+
+    def test_detects_git_repo_in_parent(self, tmp_path: Path) -> None:
+        (tmp_path / ".git").mkdir()
+        child = tmp_path / "src" / "lib"
+        child.mkdir(parents=True)
+        with patch("timereg.core.config.Path") as mock_path:
+            mock_path.cwd.return_value = child
+            msg = no_config_message()
+        assert "timereg init" in msg
 
 
 class TestResolveDbPath:

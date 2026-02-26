@@ -85,3 +85,18 @@ class TestFetchCommand:
             env={"HOME": str(tmp_path / "fakehome")},
         )
         assert result.exit_code == 1
+
+    def test_fetch_no_config_suggests_init_in_git_repo(
+        self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When in a git repo without .timetracker.toml, suggest timereg init."""
+        monkeypatch.chdir(git_repo)
+        db_path = str(tmp_path / "test.db")
+        result = runner.invoke(
+            app,
+            ["--db-path", db_path, "fetch"],
+            catch_exceptions=False,
+            env={"HOME": str(tmp_path / "fakehome")},
+        )
+        assert result.exit_code == 1
+        assert "timereg init" in result.output
