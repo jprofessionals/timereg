@@ -13,7 +13,7 @@ Time entries MUST be registered on the correct project. The current working dire
 
 **When `fetch` fails with "No .timetracker.toml found":**
 1. Tell the user that the current directory is not configured as a timereg project
-2. Suggest running `timereg init` to set up this directory as a project
+2. Suggest running `timereg init --yes` to set up this directory as a project (non-interactive, safe for agents)
 3. **STOP and ask the user** what they want to do — do NOT silently pick another project
 4. NEVER register time on a random existing project just because it exists
 
@@ -96,7 +96,9 @@ When asked to export or generate a CSV/spreadsheet:
 - List: `timereg --format json projects list`
 - Add manual project: `timereg projects add --name "Project Name" --slug project-slug`
 - Show details: `timereg projects show <slug>`
-- Initialize current directory: `timereg init`
+- Initialize current directory: `timereg init --yes` (non-interactive, uses directory name as defaults)
+- Initialize with custom name: `timereg init --yes --name "Project Name"`
+- Interactive init (for terminal users): `timereg init`
 
 ## Key details
 
