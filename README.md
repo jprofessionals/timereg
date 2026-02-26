@@ -88,17 +88,33 @@ TimeReg accepts flexible time input:
 
 ## AI Agent Integration
 
-TimeReg is designed to work with AI coding agents. Add `TIMEREG_SKILL.md` to your agent's context (it's included in the repo), and the agent can:
+TimeReg is designed to work with AI coding agents. A skill file is bundled with the package that teaches agents how to use the CLI. Install it to your agent's skill directory:
+
+```bash
+# Claude Code
+mkdir -p ~/.claude/skills/timereg
+timereg skill > ~/.claude/skills/timereg/SKILL.md
+
+# Other agents — pipe to wherever your agent reads skills from
+timereg skill > /path/to/agent/skills/timereg.md
+
+# Show the path to the bundled file (useful for symlinking)
+timereg skill --path
+```
+
+After installing the skill, the agent can:
 
 1. Fetch your unregistered commits
 2. Generate meaningful summaries from the commit data
 3. Register the time entry — all from a conversational prompt like "register my hours for today"
 
+Re-run `timereg skill > ...` after updating timereg to keep the skill in sync with the CLI.
+
 All commands support `--format json` for structured output that agents can parse:
 
 ```bash
-timereg fetch --format json
-timereg list --all --format json
+timereg --format json fetch
+timereg --format json list --all
 ```
 
 ## Commands
@@ -106,14 +122,18 @@ timereg list --all --format json
 | Command | Description |
 |---------|-------------|
 | `timereg fetch` | Show unregistered commits for today |
+| `timereg fetch --all --hours 8h` | Fetch across all projects with time split |
 | `timereg register` | Create a time entry |
 | `timereg list` | List time entries with filters |
 | `timereg edit <id>` | Modify an existing entry |
-| `timereg delete <id>` | Remove an entry |
+| `timereg delete <id> [<id>...]` | Remove one or more entries |
 | `timereg undo` | Undo the last registration |
 | `timereg projects list` | List registered projects |
-| `timereg projects add` | Manually add a project |
+| `timereg projects add .` | Add project from .timereg.toml in directory |
+| `timereg projects add --name --slug` | Manually add a project |
 | `timereg projects remove` | Remove a project |
+| `timereg skill` | Output bundled agent skill file |
+| `timereg init` | Initialize .timereg.toml in current directory |
 | `timereg` | Interactive mode (no subcommand) |
 
 Run `timereg <command> --help` for full option details.
