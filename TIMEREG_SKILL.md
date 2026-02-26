@@ -27,10 +27,11 @@ When the user says "register 4h30m", "logg 3 timer", or "register time":
 2. If fetch fails (no config), follow the "Project resolution" steps above — STOP and ask
 3. Review the commit data returned
 4. Generate TWO summaries from the commits:
-   - `--short-summary`: 2-10 words capturing the essence of the work
+   - `--short-summary`: A **user-friendly, high-level description** (2-10 words). Think "what would go on a timesheet". Examples: "API authentication system", "Bug fixes and testing", "Database migration tooling". Do NOT use technical commit language.
    - `--long-summary`: 20-100 words with more detail about what was done
-5. Run `timereg register --hours <time> --short-summary "..." --long-summary "..." --commits <hash1>,<hash2>`
-6. Confirm to the user what was registered, including project name, hours, and summary
+5. **Always include relevant tags** via `--tags`. Derive tags from the work done (e.g., "development", "bugfix", "testing", "documentation", "devops", "meeting", "planning", "review"). Multiple tags are comma-separated.
+6. Run `timereg register --hours <time> --short-summary "..." --long-summary "..." --commits <hash1>,<hash2> --tags <tags>`
+7. The CLI will display a summary table of today's entries after registration. Confirm to the user what was registered, including project name, hours, tags, and summary.
 
 ## Multi-project time splitting
 
