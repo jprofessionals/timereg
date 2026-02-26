@@ -1,6 +1,19 @@
 """Typer CLI application — entry point and global options."""
 
+from __future__ import annotations
+
+import os
+from pathlib import Path
+from typing import Annotated
+
 import typer
+
+from timereg.core.config import (
+    ensure_global_config,
+    load_global_config,
+    resolve_db_path,
+)
+from timereg.core.database import Database
 
 app = typer.Typer(
     name="timereg",
@@ -9,6 +22,45 @@ app = typer.Typer(
 )
 
 
+class AppState:
+    """Shared state initialized by the global callback."""
+
+    db: Database
+    db_path: Path
+    verbose: bool = False
+    output_format: str = "text"
+
+
+state = AppState()
+
+
 @app.callback()
-def main() -> None:
-    """Git-aware time tracking for developers."""
+def main(
+    db_path: Annotated[str | None, typer.Option("--db-path", help="Override database path")] = None,
+    config: Annotated[
+        str | None, typer.Option("--config", help="Override global config path")
+    ] = None,
+    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Verbose output")] = False,
+    output_format: Annotated[
+        str, typer.Option("--format", help="Output format: json or text")
+    ] = "text",
+) -> None:
+    """TimeReg — Git-aware time tracking for developers."""
+    global_config_path = Path(config) if config else ensure_global_config()
+    global_config = load_global_config(global_config_path)
+
+    resolved_db_path = resolve_db_path(
+        cli_db_path=db_path,
+        env_db_path=os.environ.get("TIMEREG_DB_PATH"),
+        config_db_path=global_config.db_path,
+    )
+
+    state.db = Database(resolved_db_path)
+    state.db.migrate()
+    state.verbose = verbose
+    state.output_format = output_format
+    state.db_path = resolved_db_path
+
+
+# Import subcommands so they register on the app
+import timereg.cli.fetch as _fetch  # noqa: E402, F401
