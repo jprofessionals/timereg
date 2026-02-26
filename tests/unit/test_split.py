@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from timereg.core.split import ProjectMetrics, calculate_split
+from timereg.core.split import ProjectMetrics, calculate_split, round_to_nearest
 
 
 class TestCalculateSplit:
@@ -217,3 +217,97 @@ class TestCalculateSplitWithOverrides:
         ]
         result = calculate_split(metrics, total_hours=8.0, overrides={"nonexistent": 3.0})
         assert result[0].suggested_hours == 8.0
+
+
+class TestRoundToNearest:
+    def test_round_to_30_minutes(self) -> None:
+        assert round_to_nearest(2.33, 30) == 2.5
+        assert round_to_nearest(2.1, 30) == 2.0
+        assert round_to_nearest(2.26, 30) == 2.5
+        assert round_to_nearest(2.74, 30) == 2.5
+        assert round_to_nearest(2.76, 30) == 3.0
+
+    def test_round_to_15_minutes(self) -> None:
+        assert round_to_nearest(2.1, 15) == 2.0
+        assert round_to_nearest(2.2, 15) == 2.25
+        assert round_to_nearest(2.3, 15) == 2.25
+        assert round_to_nearest(2.4, 15) == 2.5
+
+    def test_round_to_60_minutes(self) -> None:
+        assert round_to_nearest(2.3, 60) == 2.0
+        assert round_to_nearest(2.6, 60) == 3.0
+        assert round_to_nearest(2.5, 60) == 3.0
+
+    def test_round_to_5_minutes(self) -> None:
+        # 5min = 0.0833h steps
+        assert round_to_nearest(2.0, 5) == 2.0
+        result = round_to_nearest(2.05, 5)
+        assert abs(result - 2.0833) < 0.001
+
+    def test_round_to_1_minute(self) -> None:
+        # 1min = 0.01667h steps
+        assert round_to_nearest(2.0, 1) == 2.0
+        result = round_to_nearest(1.5, 1)
+        assert abs(result - 1.5) < 0.01
+
+    def test_zero_or_negative_minutes_returns_unchanged(self) -> None:
+        assert round_to_nearest(2.33, 0) == 2.33
+        assert round_to_nearest(2.33, -5) == 2.33
+
+    def test_exact_values_unchanged(self) -> None:
+        assert round_to_nearest(2.0, 30) == 2.0
+        assert round_to_nearest(2.5, 30) == 2.5
+        assert round_to_nearest(3.0, 30) == 3.0
+
+
+class TestCalculateSplitWithRounding:
+    def test_split_rounded_to_30_minutes(self) -> None:
+        """Suggested hours are rounded to nearest 30 minutes."""
+        metrics = [
+            ProjectMetrics("a", "A", commit_count=3, total_insertions=200, total_deletions=100),
+            ProjectMetrics("b", "B", commit_count=1, total_insertions=80, total_deletions=20),
+        ]
+        # Without rounding: a=6.0, b=2.0 (exact 75/25 split)
+        result = calculate_split(metrics, total_hours=8.0, rounding_minutes=30)
+        assert result[0].suggested_hours == 6.0
+        assert result[1].suggested_hours == 2.0
+        total = sum(r.suggested_hours for r in result)
+        assert total == 8.0
+
+    def test_split_rounding_adjusts_total(self) -> None:
+        """After rounding, the largest entry absorbs any difference to match total."""
+        # 3 equal projects, 7h → 2.33h each → rounded to 2.5 each = 7.5
+        # The fix_rounding should adjust the largest to make sum = 7.0
+        metrics = [
+            ProjectMetrics("a", "A", commit_count=1, total_insertions=10, total_deletions=0),
+            ProjectMetrics("b", "B", commit_count=1, total_insertions=10, total_deletions=0),
+            ProjectMetrics("c", "C", commit_count=1, total_insertions=10, total_deletions=0),
+        ]
+        result = calculate_split(metrics, total_hours=7.0, rounding_minutes=30)
+        total = sum(r.suggested_hours for r in result)
+        assert total == 7.0
+
+    def test_split_rounding_15_minutes(self) -> None:
+        """Rounding to 15-minute intervals works correctly."""
+        metrics = [
+            ProjectMetrics("a", "A", commit_count=3, total_insertions=300, total_deletions=0),
+            ProjectMetrics("b", "B", commit_count=1, total_insertions=100, total_deletions=0),
+        ]
+        result = calculate_split(metrics, total_hours=8.0, rounding_minutes=15)
+        # Each should be a multiple of 0.25
+        for entry in result:
+            assert entry.suggested_hours % 0.25 == 0.0 or entry is result[0]
+        total = sum(r.suggested_hours for r in result)
+        assert total == 8.0
+
+    def test_no_rounding_when_zero(self) -> None:
+        """rounding_minutes=0 disables rounding (same as default)."""
+        metrics = [
+            ProjectMetrics("a", "A", commit_count=1, total_insertions=10, total_deletions=0),
+            ProjectMetrics("b", "B", commit_count=1, total_insertions=10, total_deletions=0),
+            ProjectMetrics("c", "C", commit_count=1, total_insertions=10, total_deletions=0),
+        ]
+        result_no_round = calculate_split(metrics, total_hours=7.0, rounding_minutes=0)
+        result_default = calculate_split(metrics, total_hours=7.0)
+        for a, b in zip(result_no_round, result_default, strict=True):
+            assert a.suggested_hours == b.suggested_hours

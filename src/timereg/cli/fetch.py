@@ -187,7 +187,7 @@ def _fetch_all_projects(target_date: str, total_hours: float) -> None:
                 )
             )
 
-    split = calculate_split(metrics_list, total_hours)
+    split = calculate_split(metrics_list, total_hours, rounding_minutes=state.rounding_minutes)
 
     all_result = AllProjectsFetchResult(
         date=target_date,

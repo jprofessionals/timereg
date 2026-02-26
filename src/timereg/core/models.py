@@ -251,6 +251,7 @@ class GlobalConfig(BaseModel):
     user_name: str | None = None
     user_email: str | None = None
     max_daily_hours: float = 12.0
+    rounding_minutes: int = 30
 
 
 class ProjectConfig(BaseModel):

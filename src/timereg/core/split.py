@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import NamedTuple
 
 from timereg.core.models import SuggestedSplitEntry
@@ -17,10 +18,22 @@ class ProjectMetrics(NamedTuple):
     total_deletions: int
 
 
+def round_to_nearest(hours: float, minutes: int) -> float:
+    """Round hours to the nearest interval defined by minutes.
+
+    Examples: round_to_nearest(2.33, 30) → 2.5, round_to_nearest(2.33, 15) → 2.25
+    """
+    if minutes <= 0:
+        return hours
+    step = minutes / 60.0
+    return round(math.floor(hours / step + 0.5) * step, 4)
+
+
 def calculate_split(
     project_metrics: list[ProjectMetrics],
     total_hours: float,
     overrides: dict[str, float] | None = None,
+    rounding_minutes: int = 0,
 ) -> list[SuggestedSplitEntry]:
     """Calculate a proportional time split across projects.
 
@@ -84,8 +97,14 @@ def calculate_split(
             entry.suggested_hours = 0.0
             entry.weight = 0.0
 
+    # Apply interval rounding to non-overridden entries (e.g. nearest 30min)
+    if rounding_minutes > 0:
+        for entry in result:
+            if entry.project_slug not in overrides:
+                entry.suggested_hours = round_to_nearest(entry.suggested_hours, rounding_minutes)
+
     # Fix rounding so sum equals total_hours exactly
-    _fix_rounding(result, total_hours, overrides)
+    _fix_rounding(result, total_hours, overrides, rounding_minutes)
 
     return result
 
@@ -109,6 +128,7 @@ def _fix_rounding(
     entries: list[SuggestedSplitEntry],
     total_hours: float,
     overrides: dict[str, float],
+    rounding_minutes: int = 0,
 ) -> None:
     """Adjust the largest non-overridden entry so the sum equals total_hours exactly."""
     current_total = sum(e.suggested_hours for e in entries)

@@ -30,6 +30,7 @@ class AppState:
     db_path: Path
     verbose: bool = False
     output_format: str = "text"
+    rounding_minutes: int = 30
 
 
 state = AppState()
@@ -63,6 +64,7 @@ def main(
     state.verbose = verbose
     state.output_format = output_format
     state.db_path = resolved_db_path
+    state.rounding_minutes = global_config.rounding_minutes
 
     if ctx.invoked_subcommand is None:
         from timereg.cli.interactive import run_interactive
@@ -80,6 +82,7 @@ import timereg.cli.init as _init  # noqa: E402, F401
 import timereg.cli.list_cmd as _list_cmd  # noqa: E402, F401
 import timereg.cli.projects as _projects  # noqa: E402, F401
 import timereg.cli.register as _register  # noqa: E402, F401
+import timereg.cli.skill as _skill  # noqa: E402, F401
 import timereg.cli.status as _status  # noqa: E402, F401
 import timereg.cli.summary as _summary  # noqa: E402, F401
 import timereg.cli.undo as _undo  # noqa: E402, F401

@@ -71,6 +71,7 @@ def load_global_config(config_path: Path) -> GlobalConfig:
         merge_commits=defaults.get("merge_commits", False),
         timezone=defaults.get("timezone", "Europe/Oslo"),
         max_daily_hours=defaults.get("max_daily_hours", 12.0),
+        rounding_minutes=defaults.get("rounding_minutes", 30),
         user_name=user.get("name"),
         user_email=user.get("email"),
     )
@@ -93,6 +94,7 @@ def ensure_global_config() -> Path:
             "[defaults]\n"
             "merge_commits = false\n"
             'timezone = "Europe/Oslo"\n'
+            "rounding_minutes = 30\n"
             "\n"
             "[user]\n"
             '# name = "Your Name"\n'
