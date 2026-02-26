@@ -249,3 +249,72 @@ class TestUndoLast:
 
     def test_undo_with_no_entries_returns_none(self, db: Database) -> None:
         assert undo_last(db, user_email="user@test.com") is None
+
+
+class TestConstrainedTags:
+    def test_create_entry_with_valid_tags(self, db: Database, project_id: int) -> None:
+        entry = create_entry(
+            db=db,
+            project_id=project_id,
+            hours=2.0,
+            short_summary="Test",
+            entry_date=date(2026, 2, 25),
+            git_user_name="Test",
+            git_user_email="test@test.com",
+            entry_type="manual",
+            tags=["dev", "review"],
+            allowed_tags=["dev", "review", "meeting"],
+        )
+        assert not isinstance(entry, list)
+        assert entry.tags == ["dev", "review"]
+
+    def test_create_entry_rejects_invalid_tags(self, db: Database, project_id: int) -> None:
+        with pytest.raises(ValueError, match="Invalid tags"):
+            create_entry(
+                db=db,
+                project_id=project_id,
+                hours=2.0,
+                short_summary="Test",
+                entry_date=date(2026, 2, 25),
+                git_user_name="Test",
+                git_user_email="test@test.com",
+                entry_type="manual",
+                tags=["dev", "invalid"],
+                allowed_tags=["dev", "review", "meeting"],
+            )
+
+    def test_create_entry_no_constraint_allows_any(self, db: Database, project_id: int) -> None:
+        entry = create_entry(
+            db=db,
+            project_id=project_id,
+            hours=2.0,
+            short_summary="Test",
+            entry_date=date(2026, 2, 25),
+            git_user_name="Test",
+            git_user_email="test@test.com",
+            entry_type="manual",
+            tags=["anything", "goes"],
+        )
+        assert not isinstance(entry, list)
+        assert entry.tags == ["anything", "goes"]
+
+    def test_edit_entry_rejects_invalid_tags(self, db: Database, project_id: int) -> None:
+        entry = create_entry(
+            db=db,
+            project_id=project_id,
+            hours=2.0,
+            short_summary="Test",
+            entry_date=date(2026, 2, 25),
+            git_user_name="Test",
+            git_user_email="test@test.com",
+            entry_type="manual",
+        )
+        assert not isinstance(entry, list)
+        assert entry.id is not None
+        with pytest.raises(ValueError, match="Invalid tags"):
+            edit_entry(
+                db=db,
+                entry_id=entry.id,
+                tags=["bad-tag"],
+                allowed_tags=["dev", "review"],
+            )

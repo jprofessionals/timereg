@@ -15,6 +15,16 @@ if TYPE_CHECKING:
     from timereg.core.models import CommitInfo
 
 
+def _validate_tags(tags: list[str] | None, allowed_tags: list[str] | None) -> None:
+    """Validate tags against allowed list. Raises ValueError if invalid."""
+    if tags is None or allowed_tags is None:
+        return
+    invalid = [t for t in tags if t not in allowed_tags]
+    if invalid:
+        msg = f"Invalid tags: {invalid}. Allowed: {allowed_tags}"
+        raise ValueError(msg)
+
+
 def _row_to_entry(row: tuple[object, ...]) -> Entry:
     """Convert a database row to an Entry model."""
     return Entry(
@@ -123,8 +133,10 @@ def create_entry(
     tags: list[str] | None = None,
     peer_emails: list[str] | None = None,
     split_group_id: str | None = None,
+    allowed_tags: list[str] | None = None,
 ) -> Entry | list[Entry]:
     """Create a time entry, optionally with peers."""
+    _validate_tags(tags, allowed_tags)
     peer_group_id = str(uuid.uuid4()) if peer_emails else None
 
     entry = _insert_entry(
@@ -181,8 +193,11 @@ def edit_entry(
     tags: list[str] | None = None,
     entry_date: date | None = None,
     apply_to_peers: bool = False,
+    allowed_tags: list[str] | None = None,
 ) -> Entry:
     """Edit an existing entry."""
+    _validate_tags(tags, allowed_tags)
+
     updates: list[str] = []
     params: list[object] = []
 
