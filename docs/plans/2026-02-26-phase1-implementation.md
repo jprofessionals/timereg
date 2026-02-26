@@ -55,7 +55,7 @@ timereg = "timereg.cli.app:app"
 
 [build-system]
 requires = ["hatchling"]
-build-backend = "hatchling.backends"
+build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/timereg"]
