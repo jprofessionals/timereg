@@ -11,6 +11,7 @@ import typer
 from timereg.cli import entry_to_dict
 from timereg.cli.app import app, state
 from timereg.core.entries import edit_entry
+from timereg.core.projects import get_project
 from timereg.core.time_parser import parse_time
 
 
@@ -48,6 +49,18 @@ def edit(
     # Parse date
     entry_date = date.fromisoformat(date_str) if date_str else None
 
+    # Resolve allowed_tags from the entry's project when tags are being changed
+    allowed_tags: list[str] | None = None
+    if tag_list is not None:
+        row = state.db.execute(
+            "SELECT p.slug FROM entries e JOIN projects p ON e.project_id = p.id WHERE e.id=?",
+            (entry_id,),
+        ).fetchone()
+        if row:
+            project = get_project(state.db, row[0])
+            if project:
+                allowed_tags = project.allowed_tags
+
     try:
         updated = edit_entry(
             db=state.db,
@@ -58,6 +71,7 @@ def edit(
             tags=tag_list,
             entry_date=entry_date,
             apply_to_peers=apply_to_peers,
+            allowed_tags=allowed_tags,
         )
     except ValueError as e:
         typer.echo(f"Error: {e}", err=True)

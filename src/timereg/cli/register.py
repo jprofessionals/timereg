@@ -125,20 +125,25 @@ def register(
         ]
 
     # Create the entry
-    result = create_entry(
-        db=state.db,
-        project_id=project_id,
-        hours=parsed_hours,
-        short_summary=short_summary,
-        entry_date=entry_date,
-        git_user_name=user.name,
-        git_user_email=user.email,
-        entry_type=resolved_type,
-        long_summary=long_summary,
-        commits=commit_infos,
-        tags=tag_list,
-        peer_emails=peer,
-    )
+    try:
+        result = create_entry(
+            db=state.db,
+            project_id=project_id,
+            hours=parsed_hours,
+            short_summary=short_summary,
+            entry_date=entry_date,
+            git_user_name=user.name,
+            git_user_email=user.email,
+            entry_type=resolved_type,
+            long_summary=long_summary,
+            commits=commit_infos,
+            tags=tag_list,
+            peer_emails=peer,
+            allowed_tags=project.allowed_tags,
+        )
+    except ValueError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1) from None
 
     # Output
     if state.output_format == "json":

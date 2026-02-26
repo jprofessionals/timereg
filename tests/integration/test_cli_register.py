@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING
 from typer.testing import CliRunner
 
 from tests.conftest import make_commit
-from timereg.cli.app import app
+from timereg.cli.app import app, state
+from timereg.core.database import Database
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -17,6 +18,21 @@ if TYPE_CHECKING:
     import pytest
 
 runner = CliRunner()
+
+
+def _setup(tmp_path: Path) -> Database:
+    """Create a migrated database with a test project, wired into CLI state."""
+    db = Database(tmp_path / "test.db")
+    db.migrate()
+    state.db = db
+    state.output_format = "text"
+    state.db_path = tmp_path / "test.db"
+    db.execute(
+        "INSERT INTO projects (name, slug) VALUES (?, ?)",
+        ("Test Project", "test"),
+    )
+    db.commit()
+    return db
 
 
 class TestRegisterCommand:
@@ -265,3 +281,62 @@ class TestRegisterCommand:
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         assert data["long_summary"].startswith("Implemented REST API")
+
+
+class TestConstrainedTagsCLI:
+    def test_register_rejects_invalid_tag(self, tmp_path: Path) -> None:
+        """Register with a tag not in the allowed list should fail."""
+        db = _setup(tmp_path)
+        db.execute(
+            "UPDATE projects SET allowed_tags=? WHERE slug='test'",
+            ('["dev", "review"]',),
+        )
+        db.commit()
+        result = runner.invoke(
+            app,
+            [
+                "--db-path",
+                str(tmp_path / "test.db"),
+                "register",
+                "--hours",
+                "2h",
+                "--short-summary",
+                "Test",
+                "--project",
+                "test",
+                "--tags",
+                "dev,invalid",
+                "--entry-type",
+                "manual",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "invalid" in result.output.lower()
+
+    def test_register_accepts_valid_tags(self, tmp_path: Path) -> None:
+        """Register with tags that are all in the allowed list should succeed."""
+        db = _setup(tmp_path)
+        db.execute(
+            "UPDATE projects SET allowed_tags=? WHERE slug='test'",
+            ('["dev", "review"]',),
+        )
+        db.commit()
+        result = runner.invoke(
+            app,
+            [
+                "--db-path",
+                str(tmp_path / "test.db"),
+                "register",
+                "--hours",
+                "2h",
+                "--short-summary",
+                "Test",
+                "--project",
+                "test",
+                "--tags",
+                "dev,review",
+                "--entry-type",
+                "manual",
+            ],
+        )
+        assert result.exit_code == 0
