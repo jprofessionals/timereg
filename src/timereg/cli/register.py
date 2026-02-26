@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from datetime import date
+from datetime import date, timedelta
 from typing import TYPE_CHECKING, Annotated
 
 if TYPE_CHECKING:
@@ -168,32 +168,37 @@ def register(
     if tag_list:
         typer.echo(f"  Tags: {', '.join(tag_list)}")
 
-    # Show today's entries across all projects
-    todays_entries = list_entries(db=state.db, date_filter=entry_date, all_projects=True)
-    if todays_entries:
+    # Show this week's entries across all projects
+    monday = entry_date - timedelta(days=entry_date.weekday())
+    week_entries = list_entries(
+        db=state.db, date_from=monday, date_to=entry_date, all_projects=True
+    )
+    if week_entries:
         project_names: dict[int, str] = {}
         for p in list_projects(state.db):
             if p.id is not None:
                 project_names[p.id] = p.name
 
         typer.echo("")
-        table = Table(title=f"Today ({entry_date})")
+        table = Table(title=f"This week ({monday} \u2014 {entry_date})")
         table.add_column("ID", style="cyan", justify="right")
         table.add_column("Project", style="dim")
+        table.add_column("Date", style="green")
         table.add_column("Hours", style="yellow", justify="right")
         table.add_column("Summary")
         table.add_column("Tags", style="magenta")
 
-        for entry in todays_entries:
+        for entry in week_entries:
             tags_str = ", ".join(entry.tags) if entry.tags else ""
             table.add_row(
                 str(entry.id or ""),
                 project_names.get(entry.project_id, "?"),
+                str(entry.date),
                 f"{entry.hours:.2f}",
                 entry.short_summary,
                 tags_str,
             )
 
-        total_hours = sum(e.hours for e in todays_entries)
+        total_hours = sum(e.hours for e in week_entries)
         console.print(table)
-        typer.echo(f"Total today: {total_hours:.2f}h")
+        typer.echo(f"Total this week: {total_hours:.2f}h")
