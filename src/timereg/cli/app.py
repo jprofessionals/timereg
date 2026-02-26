@@ -74,6 +74,7 @@ def main(
 import timereg.cli.check as _check  # noqa: E402, F401
 import timereg.cli.delete as _delete  # noqa: E402, F401
 import timereg.cli.edit as _edit  # noqa: E402, F401
+import timereg.cli.export as _export  # noqa: E402, F401
 import timereg.cli.fetch as _fetch  # noqa: E402, F401
 import timereg.cli.list_cmd as _list_cmd  # noqa: E402, F401
 import timereg.cli.projects as _projects  # noqa: E402, F401
