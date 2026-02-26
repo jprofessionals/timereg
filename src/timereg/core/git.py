@@ -64,8 +64,11 @@ def parse_log_output(output: str, repo_path: str) -> list[CommitInfo]:
 
         while i < len(lines):
             stat_line = lines[i].strip()
-            if not stat_line or "\x00" in stat_line:
+            if "\x00" in stat_line:
                 break
+            if not stat_line:
+                i += 1
+                continue
             stat_parts = stat_line.split("\t")
             if len(stat_parts) == 3:
                 ins_str, del_str, filename = stat_parts
