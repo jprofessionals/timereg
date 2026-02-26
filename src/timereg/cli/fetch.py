@@ -208,7 +208,9 @@ def fetch(
     date_str: Annotated[
         str | None, typer.Option("--date", help="Date (YYYY-MM-DD), default today")
     ] = None,
-    project_slug: Annotated[str | None, typer.Option("--project", help="Project slug")] = None,
+    project_slug: Annotated[
+        str | None, typer.Option("--project", help="Project ID, slug, or name")
+    ] = None,
     fetch_all: Annotated[
         bool, typer.Option("--all", help="Fetch across all registered projects")
     ] = False,

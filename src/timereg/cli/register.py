@@ -20,7 +20,7 @@ from timereg.core.config import find_project_config, load_project_config, no_con
 from timereg.core.entries import create_entry, list_entries
 from timereg.core.git import resolve_git_user
 from timereg.core.models import CommitInfo, GitUser
-from timereg.core.projects import auto_register_project, get_project, list_projects
+from timereg.core.projects import auto_register_project, list_projects, resolve_project
 from timereg.core.time_parser import parse_time
 
 console = Console()
@@ -45,7 +45,9 @@ def register(
     date_str: Annotated[
         str | None, typer.Option("--date", help="Date (YYYY-MM-DD), default today")
     ] = None,
-    project_slug: Annotated[str | None, typer.Option("--project", help="Project slug")] = None,
+    project_slug: Annotated[
+        str | None, typer.Option("--project", help="Project ID, slug, or name")
+    ] = None,
     entry_type: Annotated[
         str,
         typer.Option("--entry-type", help="Entry type: git or manual"),
@@ -88,7 +90,7 @@ def register(
     # Resolve project
     project = None
     if project_slug:
-        project = get_project(state.db, project_slug)
+        project = resolve_project(state.db, project_slug)
         if project is None:
             typer.echo(f"Error: Project '{project_slug}' not found.", err=True)
             raise typer.Exit(1)

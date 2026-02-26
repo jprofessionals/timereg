@@ -14,7 +14,7 @@ from timereg.cli import entry_to_dict
 from timereg.cli.app import app, state
 from timereg.core.config import find_project_config, load_project_config
 from timereg.core.entries import list_entries
-from timereg.core.projects import auto_register_project, get_project, list_projects
+from timereg.core.projects import auto_register_project, list_projects, resolve_project
 
 console = Console()
 
@@ -27,7 +27,7 @@ def list_cmd(
     date_from: Annotated[str | None, typer.Option("--from", help="Start date (YYYY-MM-DD)")] = None,
     date_to: Annotated[str | None, typer.Option("--to", help="End date (YYYY-MM-DD)")] = None,
     project_slug: Annotated[
-        str | None, typer.Option("--project", help="Filter by project slug")
+        str | None, typer.Option("--project", help="Filter by project ID, slug, or name")
     ] = None,
     all_projects: Annotated[
         bool, typer.Option("--all", help="Show entries across all projects")
@@ -39,7 +39,7 @@ def list_cmd(
     project_id: int | None = None
 
     if project_slug:
-        project = get_project(state.db, project_slug)
+        project = resolve_project(state.db, project_slug)
         if project is None:
             typer.echo(f"Error: Project '{project_slug}' not found.", err=True)
             raise typer.Exit(1)

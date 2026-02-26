@@ -12,6 +12,7 @@ from timereg.core.projects import (
     get_project,
     list_projects,
     remove_project,
+    resolve_project,
     slugify,
 )
 
@@ -131,6 +132,50 @@ class TestListProjects:
         add_project(db, "B", "b")
         projects = list_projects(db)
         assert len(projects) == 2
+
+
+class TestResolveProject:
+    def test_resolve_by_slug(self, db: Database) -> None:
+        add_project(db, "My Project", "my-project")
+        project = resolve_project(db, "my-project")
+        assert project is not None
+        assert project.slug == "my-project"
+
+    def test_resolve_by_id(self, db: Database) -> None:
+        created = add_project(db, "My Project", "my-project")
+        project = resolve_project(db, str(created.id))
+        assert project is not None
+        assert project.slug == "my-project"
+
+    def test_resolve_by_name_case_insensitive(self, db: Database) -> None:
+        add_project(db, "My Project", "my-project")
+        project = resolve_project(db, "my project")
+        assert project is not None
+        assert project.slug == "my-project"
+
+    def test_resolve_by_name_exact_case(self, db: Database) -> None:
+        add_project(db, "My Project", "my-project")
+        project = resolve_project(db, "My Project")
+        assert project is not None
+        assert project.slug == "my-project"
+
+    def test_resolve_nonexistent_returns_none(self, db: Database) -> None:
+        assert resolve_project(db, "nonexistent") is None
+
+    def test_resolve_id_takes_priority(self, db: Database) -> None:
+        """If input is numeric, try ID first before slug/name."""
+        p1 = add_project(db, "First", "first")
+        add_project(db, "Second", "second")
+        project = resolve_project(db, str(p1.id))
+        assert project is not None
+        assert project.name == "First"
+
+    def test_resolve_numeric_string_falls_back_to_slug(self, db: Database) -> None:
+        """If numeric ID doesn't match, still try slug."""
+        add_project(db, "Test", "999")
+        project = resolve_project(db, "999")
+        assert project is not None
+        assert project.slug == "999"
 
 
 class TestRemoveProject:

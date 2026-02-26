@@ -153,6 +153,24 @@ def get_project_by_id(db: Database, project_id: int) -> Project | None:
     return _row_to_project(row)
 
 
+def resolve_project(db: Database, identifier: str) -> Project | None:
+    """Resolve a project by numeric ID, slug, or name (case-insensitive)."""
+    if identifier.isdigit():
+        project = get_project_by_id(db, int(identifier))
+        if project is not None:
+            return project
+    project = get_project(db, identifier)
+    if project is not None:
+        return project
+    row = db.execute(
+        f"{_SELECT_PROJECT} WHERE lower(name)=lower(?)",
+        (identifier,),
+    ).fetchone()
+    if row is not None:
+        return _row_to_project(row)
+    return None
+
+
 def list_projects(db: Database) -> list[Project]:
     """List all registered projects."""
     rows = db.execute(f"{_SELECT_PROJECT} ORDER BY name").fetchall()

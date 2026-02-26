@@ -9,7 +9,7 @@ from typing import Annotated
 import typer
 
 from timereg.cli.app import app, state
-from timereg.core.projects import get_project
+from timereg.core.projects import resolve_project
 from timereg.core.reports import generate_summary
 
 
@@ -24,7 +24,7 @@ def summary(
         str | None, typer.Option("--date", help="Reference date (YYYY-MM-DD)")
     ] = None,
     project_slug: Annotated[
-        str | None, typer.Option("--project", help="Filter by project slug")
+        str | None, typer.Option("--project", help="Filter by project ID, slug, or name")
     ] = None,
     tags: Annotated[str | None, typer.Option("--tags", help="Comma-separated tag filter")] = None,
     detail: Annotated[str, typer.Option("--detail", help="Detail level: brief or full")] = "brief",
@@ -51,7 +51,7 @@ def summary(
     # Resolve project
     project_id: int | None = None
     if project_slug:
-        project = get_project(state.db, project_slug)
+        project = resolve_project(state.db, project_slug)
         if project is None:
             typer.echo(f"Error: Project '{project_slug}' not found.", err=True)
             raise typer.Exit(1)

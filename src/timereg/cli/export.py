@@ -9,13 +9,13 @@ import typer
 
 from timereg.cli.app import app, state
 from timereg.core.export import export_entries
-from timereg.core.projects import get_project
+from timereg.core.projects import resolve_project
 
 
 @app.command()
 def export(
     project_slug: Annotated[
-        str | None, typer.Option("--project", help="Filter by project slug")
+        str | None, typer.Option("--project", help="Filter by project ID, slug, or name")
     ] = None,
     date_from: Annotated[str | None, typer.Option("--from", help="Start date (YYYY-MM-DD)")] = None,
     date_to: Annotated[str | None, typer.Option("--to", help="End date (YYYY-MM-DD)")] = None,
@@ -27,7 +27,7 @@ def export(
     # Resolve project
     project_id: int | None = None
     if project_slug:
-        project = get_project(state.db, project_slug)
+        project = resolve_project(state.db, project_slug)
         if project is None:
             typer.echo(f"Error: Project '{project_slug}' not found.", err=True)
             raise typer.Exit(1)

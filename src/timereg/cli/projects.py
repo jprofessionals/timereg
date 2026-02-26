@@ -15,9 +15,9 @@ from timereg.core.config import CONFIG_FILENAME, find_project_config, load_proje
 from timereg.core.projects import (
     add_project,
     auto_register_project,
-    get_project,
     list_projects,
     remove_project,
+    resolve_project,
 )
 
 if TYPE_CHECKING:
@@ -144,7 +144,7 @@ def _add_manual(name: str, slug: str) -> None:
 
 @projects_app.command("remove")
 def remove_project_cmd(
-    slug: Annotated[str, typer.Argument(help="Project slug to remove")],
+    identifier: Annotated[str, typer.Argument(help="Project ID, slug, or name")],
     keep_entries: Annotated[
         bool,
         typer.Option(
@@ -154,16 +154,20 @@ def remove_project_cmd(
     ] = True,
 ) -> None:
     """Remove a project from the registry."""
+    project = resolve_project(state.db, identifier)
+    if project is None:
+        typer.echo(f"Error: Project '{identifier}' not found.", err=True)
+        raise typer.Exit(1)
     try:
-        remove_project(state.db, slug=slug, keep_entries=keep_entries)
+        remove_project(state.db, slug=project.slug, keep_entries=keep_entries)
     except ValueError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1) from None
 
     if state.output_format == "json":
-        typer.echo(json.dumps({"removed": slug, "kept_entries": keep_entries}))
+        typer.echo(json.dumps({"removed": project.slug, "kept_entries": keep_entries}))
     else:
-        typer.echo(f"Removed project '{slug}'")
+        typer.echo(f"Removed project '{project.name}' ({project.slug})")
         if keep_entries:
             typer.echo("  (entries preserved)")
         else:
@@ -172,12 +176,12 @@ def remove_project_cmd(
 
 @projects_app.command("show")
 def show_project_cmd(
-    slug: Annotated[str, typer.Argument(help="Project slug to show")],
+    identifier: Annotated[str, typer.Argument(help="Project ID, slug, or name")],
 ) -> None:
     """Show details for a single project."""
-    project = get_project(state.db, slug)
+    project = resolve_project(state.db, identifier)
     if project is None:
-        typer.echo(f"Error: Project '{slug}' not found.", err=True)
+        typer.echo(f"Error: Project '{identifier}' not found.", err=True)
         raise typer.Exit(1)
 
     # Get repo paths
