@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 from timereg.core.models import Project
@@ -25,10 +26,19 @@ def auto_register_project(
 ) -> Project:
     """Register or update a project from its config file."""
     existing = get_project(db, config.slug)
+    allowed_tags_json = json.dumps(config.allowed_tags) if config.allowed_tags else None
     if existing is not None:
         db.execute(
-            "UPDATE projects SET name=?, config_path=?, updated_at=datetime('now') WHERE slug=?",
-            (config.name, str(config_path), config.slug),
+            "UPDATE projects SET name=?, config_path=?, weekly_hours=?, monthly_hours=?, "
+            "allowed_tags=?, updated_at=datetime('now') WHERE slug=?",
+            (
+                config.name,
+                str(config_path),
+                config.weekly_budget_hours,
+                config.monthly_budget_hours,
+                allowed_tags_json,
+                config.slug,
+            ),
         )
         db.execute("DELETE FROM project_repos WHERE project_id=?", (existing.id,))
         for repo_path in repo_paths:
@@ -42,11 +52,22 @@ def auto_register_project(
             name=config.name,
             slug=config.slug,
             config_path=str(config_path),
+            weekly_hours=config.weekly_budget_hours,
+            monthly_hours=config.monthly_budget_hours,
+            allowed_tags=config.allowed_tags,
         )
 
     cursor = db.execute(
-        "INSERT INTO projects (name, slug, config_path) VALUES (?, ?, ?)",
-        (config.name, config.slug, str(config_path)),
+        "INSERT INTO projects (name, slug, config_path, weekly_hours, monthly_hours, allowed_tags) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (
+            config.name,
+            config.slug,
+            str(config_path),
+            config.weekly_budget_hours,
+            config.monthly_budget_hours,
+            allowed_tags_json,
+        ),
     )
     project_id = cursor.lastrowid
     for repo_path in repo_paths:
@@ -55,7 +76,15 @@ def auto_register_project(
             (project_id, str(repo_path), str(repo_path.name)),
         )
     db.commit()
-    return Project(id=project_id, name=config.name, slug=config.slug, config_path=str(config_path))
+    return Project(
+        id=project_id,
+        name=config.name,
+        slug=config.slug,
+        config_path=str(config_path),
+        weekly_hours=config.weekly_budget_hours,
+        monthly_hours=config.monthly_budget_hours,
+        allowed_tags=config.allowed_tags,
+    )
 
 
 def add_project(db: Database, name: str, slug: str) -> Project:
@@ -79,12 +108,18 @@ def _row_to_project(row: tuple) -> Project:  # type: ignore[type-arg]
         name=row[1],
         slug=row[2],
         config_path=row[3],
-        created_at=row[4],
-        updated_at=row[5],
+        weekly_hours=row[4],
+        monthly_hours=row[5],
+        allowed_tags=json.loads(str(row[6])) if row[6] else None,
+        created_at=row[7],
+        updated_at=row[8],
     )
 
 
-_SELECT_PROJECT = "SELECT id, name, slug, config_path, created_at, updated_at FROM projects"
+_SELECT_PROJECT = (
+    "SELECT id, name, slug, config_path, weekly_hours, monthly_hours, "
+    "allowed_tags, created_at, updated_at FROM projects"
+)
 
 
 def get_project(db: Database, slug: str) -> Project | None:

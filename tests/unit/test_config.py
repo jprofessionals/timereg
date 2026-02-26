@@ -88,6 +88,20 @@ class TestLoadGlobalConfig:
         assert cfg.timezone == "Europe/Oslo"
 
 
+class TestGlobalConfigMaxDailyHours:
+    def test_parse_max_daily_hours(self, tmp_path: Path) -> None:
+        config_file = tmp_path / "config.toml"
+        config_file.write_text("[defaults]\nmax_daily_hours = 10.0\n")
+        config = load_global_config(config_file)
+        assert config.max_daily_hours == 10.0
+
+    def test_default_max_daily_hours(self, tmp_path: Path) -> None:
+        config_file = tmp_path / "config.toml"
+        config_file.write_text("[defaults]\n")
+        config = load_global_config(config_file)
+        assert config.max_daily_hours == 12.0
+
+
 class TestResolveDbPath:
     def test_cli_flag_takes_precedence(self) -> None:
         result = resolve_db_path(

@@ -70,6 +70,7 @@ def load_global_config(config_path: Path) -> GlobalConfig:
         db_path=database.get("path"),
         merge_commits=defaults.get("merge_commits", False),
         timezone=defaults.get("timezone", "Europe/Oslo"),
+        max_daily_hours=defaults.get("max_daily_hours", 12.0),
         user_name=user.get("name"),
         user_email=user.get("email"),
     )
