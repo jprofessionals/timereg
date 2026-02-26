@@ -1,0 +1,13 @@
+[project]
+name = "TimeRegistrering"
+slug = "timereg"
+
+[repos]
+paths = ["."]
+
+# [budget]
+# weekly_hours = 37.5
+# monthly_hours = 150.0
+
+# [tags]
+# allowed = ["development", "review", "meeting", "planning", "bugfix"]
