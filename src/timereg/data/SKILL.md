@@ -32,10 +32,10 @@ When the user says "register 4h30m", "logg 3 timer", or "register time":
 2. If fetch fails (no config), follow the "Project resolution" steps above — STOP and ask
 3. Review the commit data returned
 4. Generate TWO summaries from the commits:
-   - `--short-summary`: A **user-friendly, high-level description** (2-10 words). Think "what would go on a timesheet". Examples: "API authentication system", "Bug fixes and testing", "Database migration tooling". Do NOT use technical commit language.
+   - `--summary`: A **user-friendly, high-level description** (2-10 words). Think "what would go on a timesheet". Examples: "API authentication system", "Bug fixes and testing", "Database migration tooling". Do NOT use technical commit language.
    - `--long-summary`: 20-100 words with more detail about what was done
 5. **Always include relevant tags** via `--tags`. Derive tags from the work done (e.g., "development", "bugfix", "testing", "documentation", "devops", "meeting", "planning", "review"). Multiple tags are comma-separated.
-6. Run `timereg register --hours <time> --short-summary "..." --long-summary "..." --commits <hash1>,<hash2> --tags <tags>`
+6. Run `timereg register --hours <time> --summary "..." --long-summary "..." --commits <hash1>,<hash2> --tags <tags>`
 7. The CLI will display a summary table of today's entries after registration. Confirm to the user what was registered, including project name, hours, tags, and summary.
 
 ## Multi-project time splitting
@@ -47,13 +47,13 @@ When the user wants to register time across all projects they've worked on (e.g.
 3. Present the suggested split to the user in a clear format (e.g., "4h timereg, 3h presales, 1h ekvarda")
 4. Ask the user if the split looks reasonable, or if they want adjustments
 5. **If the user overrides a project** (e.g., "5h on presales"), recalculate: lock that project's hours and redistribute the remaining hours proportionally among the other projects based on their original weights
-6. Once confirmed, register entries for each project individually using `timereg register --project <slug> --hours <time> --short-summary "..." --tags <tags>`
+6. Once confirmed, register entries for each project individually using `timereg register --project <slug> --hours <time> --summary "..." --tags <tags>`
 
 ## Manual time registration
 
 When the user says "register 2h on projectname for meetings":
 
-1. Run `timereg register --project <slug> --hours 2h --short-summary "Sprint planning" --entry-type manual --tags meeting`
+1. Run `timereg register --project <slug> --hours 2h --summary "Sprint planning" --tags meeting`
 2. Confirm to the user
 
 ## Checking status
@@ -95,7 +95,7 @@ When asked to export or generate a CSV/spreadsheet:
 
 ## Editing and undoing
 
-- Edit: `timereg edit <id> --hours 3h --short-summary "Updated summary"`
+- Edit: `timereg edit <id> --hours 3h --summary "Updated summary"`
 - Delete: `timereg delete <id> --release-commits`
 - Undo last: `timereg undo`
 

@@ -20,7 +20,7 @@ def edit(
     entry_id: Annotated[int, typer.Argument(help="Entry ID to edit")],
     hours: Annotated[str | None, typer.Option("--hours", help="New time (e.g. 2h30m, 1.5)")] = None,
     short_summary: Annotated[
-        str | None, typer.Option("--short-summary", help="New short summary")
+        str | None, typer.Option("--summary", "--short-summary", help="New summary")
     ] = None,
     long_summary: Annotated[
         str | None, typer.Option("--long-summary", help="New long summary")

@@ -30,7 +30,7 @@ console = Console()
 def register(
     hours: Annotated[str, typer.Option("--hours", help="Time to register (e.g. 2h30m, 1.5)")],
     short_summary: Annotated[
-        str, typer.Option("--short-summary", help="Short summary (2-10 words)")
+        str, typer.Option("--summary", "--short-summary", help="Summary (2-10 words)")
     ],
     long_summary: Annotated[
         str | None, typer.Option("--long-summary", help="Detailed summary (20-100 words)")
@@ -47,9 +47,9 @@ def register(
     ] = None,
     project_slug: Annotated[str | None, typer.Option("--project", help="Project slug")] = None,
     entry_type: Annotated[
-        str | None,
+        str,
         typer.Option("--entry-type", help="Entry type: git or manual"),
-    ] = None,
+    ] = "manual",
 ) -> None:
     """Register a time entry for a project."""
     # Parse hours
@@ -67,8 +67,8 @@ def register(
     if commits:
         commit_hashes = [h.strip() for h in commits.split(",") if h.strip()]
 
-    # Resolve entry type
-    resolved_type = entry_type or ("git" if commit_hashes else "manual")
+    # Resolve entry type: auto-upgrade to "git" if commits are provided
+    resolved_type = "git" if commit_hashes else entry_type
     if resolved_type not in ("git", "manual"):
         typer.echo(f"Error: entry-type must be 'git' or 'manual', got '{resolved_type}'", err=True)
         raise typer.Exit(1)

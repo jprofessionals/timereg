@@ -63,11 +63,11 @@ main = "."
 timereg fetch
 
 # Register time with a summary
-timereg register --hours 2h30m --short-summary "Auth system implementation" \
+timereg register --hours 2h30m --summary "Auth system implementation" \
   --commits abc1234,def5678
 
 # Register time for meetings (no commits)
-timereg register --hours 1h --short-summary "Sprint planning" --entry-type manual
+timereg register --hours 1h --summary "Sprint planning"
 
 # Check your entries
 timereg list
