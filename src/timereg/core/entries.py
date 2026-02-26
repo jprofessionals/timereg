@@ -52,6 +52,14 @@ _ENTRY_COLUMNS = (
 )
 
 
+def get_entry(db: Database, entry_id: int) -> Entry | None:
+    """Get a single entry by ID, or None if not found."""
+    row = db.execute(f"SELECT {_ENTRY_COLUMNS} FROM entries WHERE id=?", (entry_id,)).fetchone()
+    if row is None:
+        return None
+    return _row_to_entry(row)
+
+
 def _insert_entry(
     db: Database,
     project_id: int,

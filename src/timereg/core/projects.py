@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from timereg.core.models import Project
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from timereg.core.database import Database
     from timereg.core.models import ProjectConfig
 
@@ -143,10 +142,35 @@ def get_project(db: Database, slug: str) -> Project | None:
     return _row_to_project(row)
 
 
+def get_project_by_id(db: Database, project_id: int) -> Project | None:
+    """Look up a project by ID."""
+    row = db.execute(
+        f"{_SELECT_PROJECT} WHERE id=?",
+        (project_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return _row_to_project(row)
+
+
 def list_projects(db: Database) -> list[Project]:
     """List all registered projects."""
     rows = db.execute(f"{_SELECT_PROJECT} ORDER BY name").fetchall()
     return [_row_to_project(r) for r in rows]
+
+
+def get_repo_paths_by_project(db: Database, projects: list[Project]) -> dict[int, list[Path]]:
+    """Get repo paths for each project from the project_repos table."""
+    result: dict[int, list[Path]] = {}
+    for p in projects:
+        if p.id is not None:
+            rows = db.execute(
+                "SELECT absolute_path FROM project_repos WHERE project_id=?",
+                (p.id,),
+            ).fetchall()
+            if rows:
+                result[p.id] = [Path(r[0]) for r in rows]
+    return result
 
 
 def remove_project(db: Database, slug: str, keep_entries: bool = True) -> None:
