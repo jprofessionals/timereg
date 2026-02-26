@@ -34,8 +34,38 @@ When the user says "register 2h on projectname for meetings":
 
 When asked "how many hours have I logged" or "what's my status":
 
-1. Run `timereg list --all --format json` to see today's entries
-2. Present the overview conversationally
+1. Run `timereg status --format json` to get a live dashboard across all projects
+2. Present the overview conversationally: today's hours, entry count, weekly total, budget status
+3. Mention any unregistered commits if present
+
+For a simple list of today's entries, use `timereg list --all --format json` instead.
+
+## Weekly/monthly summaries
+
+When asked for a report, "how was my week", or "monthly summary":
+
+1. Run `timereg summary --week --format json` (or `--month`, `--day`)
+2. Review the per-project breakdown and totals
+3. Present budget status (percentage of weekly/monthly target)
+4. For specific date ranges: `timereg summary --from 2026-02-01 --to 2026-02-28 --format json`
+5. Filter by project: `--project <slug>`, or by tags: `--tags dev,meeting`
+
+## Checking for gaps
+
+When asked "did I miss any days" or "are my hours complete":
+
+1. Run `timereg check --week --format json` (or `--month`, `--from/--to`)
+2. Review each weekday for warnings: missing hours, high hours, unregistered commits
+3. Report any budget warnings
+4. Present results conversationally
+
+## Exporting data
+
+When asked to export or generate a CSV/spreadsheet:
+
+1. Run `timereg export --export-format csv` (default) or `--export-format json`
+2. Optional filters: `--project <slug>`, `--from <date>`, `--to <date>`
+3. Output goes to stdout — can be piped to a file
 
 ## Editing and undoing
 
@@ -55,3 +85,8 @@ When asked "how many hours have I logged" or "what's my status":
 - All commands support `--format json` for structured output
 - Dates: `--date 2026-02-25` (default: today)
 - The tool auto-registers projects when it first encounters a `.timetracker.toml` file
+- `timereg summary --week --format json` for weekly reports
+- `timereg status --format json` for live dashboard
+- `timereg check --week --format json` for gap detection
+- `timereg export --export-format csv` for data export
+- Tags may be constrained by project config — check error messages
