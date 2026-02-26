@@ -77,4 +77,5 @@ import timereg.cli.fetch as _fetch  # noqa: E402, F401
 import timereg.cli.list_cmd as _list_cmd  # noqa: E402, F401
 import timereg.cli.projects as _projects  # noqa: E402, F401
 import timereg.cli.register as _register  # noqa: E402, F401
+import timereg.cli.summary as _summary  # noqa: E402, F401
 import timereg.cli.undo as _undo  # noqa: E402, F401
