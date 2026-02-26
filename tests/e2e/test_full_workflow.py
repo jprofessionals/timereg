@@ -1,11 +1,15 @@
-"""End-to-end test: complete registration workflow.
+"""End-to-end tests: complete registration workflows.
 
 Covers the full lifecycle from git repo setup through fetch, register,
 list, and undo — verifying commit tracking across the entire flow.
+
+Also covers Phase 2 features: summary, status, check, export, and tag constraints.
 """
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import subprocess
 from datetime import date
@@ -237,3 +241,284 @@ class TestFullRegistrationWorkflow:
         assert entries[0]["id"] == entry1_id
         assert entries[0]["hours"] == 3.5
         assert entries[0]["short_summary"] == "Feature A and B implementation"
+
+
+class TestPhase2Workflow:
+    """E2E test covering Phase 2 features: summary, status, check, export, tag constraints."""
+
+    def test_phase2_workflow(
+        self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """End-to-end test covering Phase 2 reporting, budget, and export features.
+
+        Steps:
+        1. Set up git repo with .timetracker.toml (budget + allowed tags)
+        2. Make commits
+        3. Fetch — verify multi-repo output with branch info
+        4. Register entry with valid tags
+        5. Try to register with invalid tag — error
+        6. Summary --week — verify budget percentage
+        7. Status — verify hours and entry count
+        8. Check --day — verify no warnings for covered day
+        9. Export CSV — verify format
+        10. Export JSON — verify structure
+        """
+        # -- Step 1: Set up git repo with .timetracker.toml --
+        config = git_repo / ".timetracker.toml"
+        config.write_text(
+            "[project]\n"
+            'name = "Test Project"\n'
+            'slug = "test-project"\n'
+            "\n"
+            "[budget]\n"
+            "weekly_hours = 20.0\n"
+            "monthly_hours = 80.0\n"
+            "\n"
+            "[tags]\n"
+            'allowed = ["development", "review", "meeting", "bugfix"]\n'
+        )
+
+        monkeypatch.chdir(git_repo)
+        db_path = str(tmp_path / "test.db")
+        env = {"HOME": str(tmp_path / "fakehome")}
+        today = date.today().isoformat()
+
+        # Capture the initial commit hash created by the git_repo fixture.
+        initial_hash = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=git_repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+        # -- Step 2: Make 2 commits --
+        hash1 = make_commit(
+            git_repo,
+            "feature_x.py",
+            "def feature_x(): pass\n",
+            "feat: add feature X",
+            commit_date=f"{today}T09:00:00+01:00",
+        )
+        hash2 = make_commit(
+            git_repo,
+            "feature_y.py",
+            "def feature_y(): pass\n",
+            "feat: add feature Y",
+            commit_date=f"{today}T11:00:00+01:00",
+        )
+
+        # -- Step 3: Fetch — verify multi-repo output with branch info --
+        result = runner.invoke(
+            app,
+            ["--db-path", db_path, "--format", "json", "fetch", "--date", today],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+        fetch_data = json.loads(result.stdout)
+        # Verify repos have branch info
+        assert len(fetch_data["repos"]) >= 1
+        repo_data = fetch_data["repos"][0]
+        assert "branch" in repo_data
+        assert isinstance(repo_data["branch"], str)
+        assert len(repo_data["branch"]) > 0
+        # Verify commits exist (initial + 2 feature commits = 3)
+        all_commits = []
+        for repo in fetch_data["repos"]:
+            all_commits.extend(repo["commits"])
+        assert len(all_commits) == 3
+        all_hashes = [c["hash"] for c in all_commits]
+        assert initial_hash in all_hashes
+        assert hash1 in all_hashes
+        assert hash2 in all_hashes
+
+        # -- Step 4: Register entry with valid tags --
+        result = runner.invoke(
+            app,
+            [
+                "--db-path",
+                db_path,
+                "--format",
+                "json",
+                "register",
+                "--hours",
+                "3h30m",
+                "--short-summary",
+                "Feature work",
+                "--long-summary",
+                "Implemented feature X and Y with initial project scaffolding.",
+                "--tags",
+                "development,review",
+                "--commits",
+                f"{initial_hash},{hash1},{hash2}",
+                "--date",
+                today,
+            ],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+        entry_data = json.loads(result.stdout)
+        assert entry_data["hours"] == 3.5
+        assert entry_data["short_summary"] == "Feature work"
+        assert entry_data["tags"] == ["development", "review"]
+
+        # -- Step 5: Try to register with invalid tag — error --
+        result = runner.invoke(
+            app,
+            [
+                "--db-path",
+                db_path,
+                "--format",
+                "json",
+                "register",
+                "--hours",
+                "1h",
+                "--short-summary",
+                "Test",
+                "--tags",
+                "development,invalid-tag",
+                "--entry-type",
+                "manual",
+                "--date",
+                today,
+            ],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code != 0
+        assert "invalid" in result.stdout.lower() or "invalid" in (result.stderr or "").lower()
+
+        # -- Step 6: Summary --week — verify budget percentage --
+        result = runner.invoke(
+            app,
+            [
+                "--db-path",
+                db_path,
+                "--format",
+                "json",
+                "summary",
+                "--week",
+                "--date",
+                today,
+            ],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+        summary_data = json.loads(result.stdout)
+        assert summary_data["total_hours"] == 3.5
+        assert len(summary_data["projects"]) == 1
+        project_summary = summary_data["projects"][0]
+        assert project_summary["total_hours"] == 3.5
+        assert project_summary["budget_weekly"] == 20.0
+        assert project_summary["budget_percent"] is not None
+        # 3.5 / 20.0 = 17.5%
+        assert abs(project_summary["budget_percent"] - 17.5) < 0.01
+
+        # -- Step 7: Status — verify hours and entry count --
+        result = runner.invoke(
+            app,
+            [
+                "--db-path",
+                db_path,
+                "--format",
+                "json",
+                "status",
+                "--date",
+                today,
+            ],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+        status_data = json.loads(result.stdout)
+        assert len(status_data["projects"]) == 1
+        project_status = status_data["projects"][0]
+        assert project_status["today_hours"] == 3.5
+        assert project_status["today_entry_count"] == 1
+
+        # -- Step 8: Check --day — verify no warnings for covered day --
+        result = runner.invoke(
+            app,
+            [
+                "--db-path",
+                db_path,
+                "--format",
+                "json",
+                "check",
+                "--day",
+                "--date",
+                today,
+            ],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+        check_data = json.loads(result.stdout)
+        # check --day skips weekends; only verify if today is a weekday
+        today_date = date.today()
+        if today_date.weekday() < 5:
+            # Weekday: should have exactly one day entry with ok=True
+            assert len(check_data["days"]) == 1
+            day_check = check_data["days"][0]
+            assert day_check["total_hours"] == 3.5
+            assert day_check["ok"] is True
+        else:
+            # Weekend: check skips the day entirely
+            assert len(check_data["days"]) == 0
+
+        # -- Step 9: Export CSV — verify format --
+        result = runner.invoke(
+            app,
+            [
+                "--db-path",
+                db_path,
+                "export",
+                "--export-format",
+                "csv",
+            ],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+        csv_output = result.stdout
+        reader = csv.reader(io.StringIO(csv_output))
+        rows = list(reader)
+        # Header + 1 data row
+        assert len(rows) == 2
+        header = rows[0]
+        assert "date" in header
+        assert "project" in header
+        assert "hours" in header
+        assert "tags" in header
+        data_row = rows[1]
+        # Tags column: "development;review"
+        tags_idx = header.index("tags")
+        assert "development" in data_row[tags_idx]
+        assert "review" in data_row[tags_idx]
+        assert ";" in data_row[tags_idx]
+
+        # -- Step 10: Export JSON — verify structure --
+        result = runner.invoke(
+            app,
+            [
+                "--db-path",
+                db_path,
+                "export",
+                "--export-format",
+                "json",
+            ],
+            catch_exceptions=False,
+            env=env,
+        )
+        assert result.exit_code == 0
+        export_data = json.loads(result.stdout)
+        assert isinstance(export_data, list)
+        assert len(export_data) == 1
+        entry_export = export_data[0]
+        assert entry_export["project"] == "Test Project"
+        assert entry_export["hours"] == 3.5
+        assert entry_export["tags"] == ["development", "review"]
+        assert entry_export["short_summary"] == "Feature work"
