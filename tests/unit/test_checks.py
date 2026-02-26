@@ -53,7 +53,7 @@ class TestGetStatus:
         assert status.projects[0].today_entry_count == 2
 
     def test_status_no_entries_generates_warning(self, tmp_db: Database) -> None:
-        pid, project = _setup_project(tmp_db)
+        _pid, project = _setup_project(tmp_db)
         status = get_status(
             db=tmp_db,
             projects=[project],
@@ -117,7 +117,7 @@ class TestRunChecks:
         assert any("high" in w.lower() or "seems" in w.lower() for w in report.days[0].warnings)
 
     def test_check_skips_weekends(self, tmp_db: Database) -> None:
-        pid, project = _setup_project(tmp_db)
+        _pid, project = _setup_project(tmp_db)
         # Feb 28, 2026 is Saturday, Mar 1 is Sunday
         report = run_checks(
             db=tmp_db,
