@@ -18,7 +18,7 @@ uv run pytest
 # Run the CLI
 uv run timereg --help
 
-# Install globally (for MCP testing)
+# Install globally (editable, for development)
 uv tool install -e .
 ```
 

@@ -27,11 +27,17 @@ If you bill hours to clients, you know the pain: reconstruct what you did at the
 git clone <repo-url>
 cd timereg
 
-# Install with uv (adds `timereg` to your PATH)
-uv tool install -e .
+# Standard install (self-contained, recommended for regular use)
+uv tool install .
 
-# After pulling changes, reinstall to pick up new code
-uv tool install -e . --force
+# Update after pulling new changes
+uv tool install . --force
+```
+
+**For development**, use editable mode so code changes take effect immediately without reinstalling:
+
+```bash
+uv tool install -e .
 ```
 
 ### Set Up a Project
