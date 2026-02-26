@@ -40,7 +40,7 @@ class TestRegisterCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Register a manual entry and verify it appears in the database."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)
@@ -76,7 +76,7 @@ class TestRegisterCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Register with commits and verify they are tracked."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         today = date.today().isoformat()
@@ -135,7 +135,7 @@ class TestRegisterCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Register an entry with tags."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)
@@ -170,7 +170,7 @@ class TestRegisterCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Register an entry with text output format."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)
@@ -201,7 +201,7 @@ class TestRegisterCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Invalid time format should fail."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)
@@ -250,7 +250,7 @@ class TestRegisterCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Register an entry with both short and long summary."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)

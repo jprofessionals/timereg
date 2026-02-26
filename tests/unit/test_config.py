@@ -14,13 +14,13 @@ from timereg.core.config import (
 
 class TestFindProjectConfig:
     def test_finds_config_in_current_dir(self, tmp_path: Path) -> None:
-        config_file = tmp_path / ".timetracker.toml"
+        config_file = tmp_path / ".timereg.toml"
         config_file.write_text('[project]\nname = "Test"\nslug = "test"\n')
         result = find_project_config(tmp_path)
         assert result == config_file
 
     def test_finds_config_in_parent_dir(self, tmp_path: Path) -> None:
-        config_file = tmp_path / ".timetracker.toml"
+        config_file = tmp_path / ".timereg.toml"
         config_file.write_text('[project]\nname = "Test"\nslug = "test"\n')
         child = tmp_path / "src" / "lib"
         child.mkdir(parents=True)
@@ -51,7 +51,7 @@ class TestLoadProjectConfig:
         assert cfg.weekly_budget_hours == 20.0
 
     def test_load_minimal_config(self, tmp_path: Path) -> None:
-        config_file = tmp_path / ".timetracker.toml"
+        config_file = tmp_path / ".timereg.toml"
         config_file.write_text('[project]\nname = "Minimal"\nslug = "minimal"\n')
         cfg = load_project_config(config_file)
         assert cfg.name == "Minimal"
@@ -60,7 +60,7 @@ class TestLoadProjectConfig:
         assert cfg.weekly_budget_hours is None
 
     def test_resolve_repo_paths(self, tmp_path: Path) -> None:
-        config_file = tmp_path / "project" / ".timetracker.toml"
+        config_file = tmp_path / "project" / ".timereg.toml"
         config_file.parent.mkdir()
         config_file.write_text(
             '[project]\nname = "Test"\nslug = "test"\n\n'
@@ -110,7 +110,7 @@ class TestNoConfigMessage:
             mock_path.cwd.return_value = tmp_path
             msg = no_config_message()
         assert "timereg init" in msg
-        assert ".timetracker.toml" in msg
+        assert ".timereg.toml" in msg
 
     def test_generic_message_outside_git_repo(self, tmp_path: Path) -> None:
         with patch("timereg.core.config.Path") as mock_path:

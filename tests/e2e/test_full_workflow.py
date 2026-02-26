@@ -37,7 +37,7 @@ class TestFullRegistrationWorkflow:
         """End-to-end test covering the complete time registration lifecycle.
 
         Steps:
-        1. Set up git repo with .timetracker.toml
+        1. Set up git repo with .timereg.toml
         2. Make 3 commits
         3. Fetch — verify 3 unregistered commits
         4. Register 2 commits as one entry
@@ -49,7 +49,7 @@ class TestFullRegistrationWorkflow:
         10. List — verify 1 entry remains
         """
         # -- Setup --
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test Project"\nslug = "test-project"\n')
 
         monkeypatch.chdir(git_repo)
@@ -252,7 +252,7 @@ class TestPhase2Workflow:
         """End-to-end test covering Phase 2 reporting, budget, and export features.
 
         Steps:
-        1. Set up git repo with .timetracker.toml (budget + allowed tags)
+        1. Set up git repo with .timereg.toml (budget + allowed tags)
         2. Make commits
         3. Fetch — verify multi-repo output with branch info
         4. Register entry with valid tags
@@ -263,8 +263,8 @@ class TestPhase2Workflow:
         9. Export CSV — verify format
         10. Export JSON — verify structure
         """
-        # -- Step 1: Set up git repo with .timetracker.toml --
-        config = git_repo / ".timetracker.toml"
+        # -- Step 1: Set up git repo with .timereg.toml --
+        config = git_repo / ".timereg.toml"
         config.write_text(
             "[project]\n"
             'name = "Test Project"\n'

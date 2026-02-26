@@ -36,7 +36,7 @@ uv tool install -e . --force
 
 ### Set Up a Project
 
-Create a `.timetracker.toml` in your project root (or any parent directory):
+Create a `.timereg.toml` in your project root (or any parent directory):
 
 ```toml
 [project]
@@ -120,7 +120,7 @@ Run `timereg <command> --help` for full option details.
 
 ## Configuration
 
-### Project Config (`.timetracker.toml`)
+### Project Config (`.timereg.toml`)
 
 Placed in your project directory (or any parent up to your home directory). TimeReg walks up from the current working directory to find it.
 
@@ -155,7 +155,7 @@ Settings resolve in this order (first wins):
 
 1. CLI flags (`--db-path`, `--date`, etc.)
 2. Environment variables (`TIMEREG_DB_PATH`)
-3. Project config (`.timetracker.toml`)
+3. Project config (`.timereg.toml`)
 4. Global config (`config.toml`)
 5. Built-in defaults
 

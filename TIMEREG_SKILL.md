@@ -12,11 +12,11 @@ You have access to the `timereg` CLI tool for time registration. Use it when the
 Time entries MUST be registered on the correct project. The current working directory determines the project context.
 
 **How project resolution works:**
-- `timereg` looks for `.timetracker.toml` in the current directory and parent directories
+- `timereg` looks for `.timereg.toml` in the current directory and parent directories
 - If found, it auto-registers and uses that project
 - If NOT found, you MUST resolve the project before registering
 
-**When `fetch` fails with "No .timetracker.toml found":**
+**When `fetch` fails with "No .timereg.toml found":**
 1. Tell the user that the current directory is not configured as a timereg project
 2. Suggest running `timereg init --yes` to set up this directory as a project (non-interactive, safe for agents)
 3. **STOP and ask the user** what they want to do — do NOT silently pick another project
@@ -40,12 +40,14 @@ When the user says "register 4h30m", "logg 3 timer", or "register time":
 
 ## Multi-project time splitting
 
-When the user wants to register time across all projects they've worked on:
+When the user wants to register time across all projects they've worked on (e.g., "I worked 8 hours today, split them among my projects"):
 
-1. Run `timereg --format json fetch --all` to get commits across all known projects
-2. Review the `suggested_split` in the response
-3. Ask the user if the split looks reasonable, or if they want adjustments
-4. Register entries for each project individually using `timereg register --project <slug> --hours <time> ...`
+1. Run `timereg --format json fetch --all --hours <total>` to get commits across all known projects with a suggested proportional split
+2. The response includes a `suggested_split` array with each project's `suggested_hours`, `weight`, `commit_count`, and line stats
+3. Present the suggested split to the user in a clear format (e.g., "4h timereg, 3h presales, 1h ekvarda")
+4. Ask the user if the split looks reasonable, or if they want adjustments
+5. **If the user overrides a project** (e.g., "5h on presales"), recalculate: lock that project's hours and redistribute the remaining hours proportionally among the other projects based on their original weights
+6. Once confirmed, register entries for each project individually using `timereg register --project <slug> --hours <time> --short-summary "..." --tags <tags>`
 
 ## Manual time registration
 
@@ -111,5 +113,5 @@ When asked to export or generate a CSV/spreadsheet:
 - Time formats: `2h30m`, `90m`, `1.5`, `4.25`
 - All commands support `--format json` for structured output (place BEFORE the subcommand)
 - Dates: `--date 2026-02-25` (default: today)
-- The tool auto-registers projects when it first encounters a `.timetracker.toml` file
+- The tool auto-registers projects when it first encounters a `.timereg.toml` file
 - Tags may be constrained by project config — check error messages

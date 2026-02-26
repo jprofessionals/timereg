@@ -1,4 +1,4 @@
-"""CLI init command — create .timetracker.toml in the current directory."""
+"""CLI init command — create .timereg.toml in the current directory."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def init(
         bool, typer.Option("--yes", "-y", help="Accept defaults without prompting")
     ] = False,
 ) -> None:
-    """Initialize a .timetracker.toml in the current directory."""
+    """Initialize a .timereg.toml in the current directory."""
     config_path = Path.cwd() / CONFIG_FILENAME
 
     if config_path.exists():

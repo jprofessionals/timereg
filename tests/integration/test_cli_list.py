@@ -54,7 +54,7 @@ class TestListCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Listing with no entries shows empty result."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)
@@ -74,7 +74,7 @@ class TestListCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """List entries after registering some."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)
@@ -105,7 +105,7 @@ class TestListCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """List entries in text format shows a table."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)
@@ -129,7 +129,7 @@ class TestListCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """List with no entries in text mode shows message."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)
@@ -148,7 +148,7 @@ class TestListCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """List with --all shows entries from all projects."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)
@@ -172,7 +172,7 @@ class TestListCommand:
         self, git_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """List with --from and --to filters by date range."""
-        config = git_repo / ".timetracker.toml"
+        config = git_repo / ".timereg.toml"
         config.write_text('[project]\nname = "Test"\nslug = "test"\n')
 
         monkeypatch.chdir(git_repo)

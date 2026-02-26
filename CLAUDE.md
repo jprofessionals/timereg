@@ -30,7 +30,7 @@ The codebase is organized into three layers:
 - `src/timereg/cli/` — Typer CLI commands that call into core
 - `src/timereg/mcp/` — MCP server that exposes core as agent tools
 
-All state is in a local SQLite database (WAL mode). Configuration is via `.timetracker.toml` (per-project) and `~/.config/timereg/config.toml` (global).
+All state is in a local SQLite database (WAL mode). Configuration is via `.timereg.toml` (per-project) and `~/.config/timereg/config.toml` (global).
 
 ## Development Approach
 
@@ -49,7 +49,7 @@ uv run pytest tests/integration/ -v
 
 ## Key Design Patterns
 
-**Config resolution:** Walk up from CWD to find `.timetracker.toml`. Merge with global config. Precedence: CLI flags > env vars > project config > global config > defaults.
+**Config resolution:** Walk up from CWD to find `.timereg.toml`. Merge with global config. Precedence: CLI flags > env vars > project config > global config > defaults.
 
 **Two-phase registration:** `fetch` returns unregistered commits → agent generates summaries → `register` persists the entry with commit associations.
 
@@ -65,7 +65,7 @@ Sequential SQL files in `src/timereg/migrations/`. Tracked via `schema_version` 
 
 1. CLI flags (`--db-path`, `--date`, etc.)
 2. Environment variables (`TIMEREG_DB_PATH`)
-3. Project config (`.timetracker.toml`)
+3. Project config (`.timereg.toml`)
 4. Global config (`config.toml`)
 5. Built-in defaults
 

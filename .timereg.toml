@@ -1,5 +1,5 @@
 [project]
-name = "TimeRegistrering"
+name = "TimeRegistry"
 slug = "timereg"
 
 [repos]

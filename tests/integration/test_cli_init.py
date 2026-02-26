@@ -19,7 +19,7 @@ runner = CliRunner()
 
 class TestInitCommand:
     def test_creates_config_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """init creates .timetracker.toml with prompted values."""
+        """init creates .timereg.toml with prompted values."""
         monkeypatch.chdir(tmp_path)
         env = {"HOME": str(tmp_path / "fakehome")}
 

@@ -10,7 +10,7 @@ import platformdirs
 
 from timereg.core.models import GlobalConfig, ProjectConfig
 
-CONFIG_FILENAME = ".timetracker.toml"
+CONFIG_FILENAME = ".timereg.toml"
 
 
 def _get_home_dir() -> Path:
@@ -18,7 +18,7 @@ def _get_home_dir() -> Path:
 
 
 def find_project_config(start: Path | None = None) -> Path | None:
-    """Walk up from start directory to find .timetracker.toml.
+    """Walk up from start directory to find .timereg.toml.
 
     Stops at the user's home directory. Returns None if not found.
     """
@@ -35,7 +35,7 @@ def find_project_config(start: Path | None = None) -> Path | None:
 
 
 def load_project_config(config_path: Path) -> ProjectConfig:
-    """Parse a .timetracker.toml file into a ProjectConfig."""
+    """Parse a .timereg.toml file into a ProjectConfig."""
     with open(config_path, "rb") as f:
         data = tomllib.load(f)
 
@@ -128,7 +128,7 @@ def _is_git_repo(path: Path | None = None) -> bool:
 
 
 def no_config_message() -> str:
-    """Build an error message for missing .timetracker.toml, with context-aware suggestions."""
+    """Build an error message for missing .timereg.toml, with context-aware suggestions."""
     lines = [f"No {CONFIG_FILENAME} found in current or parent directories."]
     if _is_git_repo():
         lines.append(f"Run 'timereg init' to create {CONFIG_FILENAME} in this directory.")

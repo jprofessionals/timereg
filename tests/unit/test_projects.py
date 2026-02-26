@@ -82,7 +82,7 @@ def db(tmp_path: Path) -> Database:
 class TestAutoRegister:
     def test_registers_project_from_config(self, db: Database) -> None:
         config = ProjectConfig(name="Ekvarda Codex", slug="ekvarda")
-        config_path = Path("/home/user/projects/ekvarda/.timetracker.toml")
+        config_path = Path("/home/user/projects/ekvarda/.timereg.toml")
         repo_paths = [Path("/home/user/projects/ekvarda")]
         project = auto_register_project(db, config, config_path, repo_paths)
         assert project.name == "Ekvarda Codex"
@@ -91,7 +91,7 @@ class TestAutoRegister:
 
     def test_upserts_on_duplicate_slug(self, db: Database) -> None:
         config = ProjectConfig(name="Ekvarda Codex", slug="ekvarda")
-        config_path = Path("/home/user/ekvarda/.timetracker.toml")
+        config_path = Path("/home/user/ekvarda/.timereg.toml")
         repo_paths = [Path("/home/user/ekvarda")]
         p1 = auto_register_project(db, config, config_path, repo_paths)
         p2 = auto_register_project(db, config, config_path, repo_paths)
@@ -152,7 +152,7 @@ class TestAutoRegisterBudgetAndTags:
             weekly_budget_hours=20.0,
             monthly_budget_hours=80.0,
         )
-        config_path = tmp_path / ".timetracker.toml"
+        config_path = tmp_path / ".timereg.toml"
         config_path.touch()
         project = auto_register_project(tmp_db, config, config_path, [])
         row = tmp_db.execute(
@@ -168,7 +168,7 @@ class TestAutoRegisterBudgetAndTags:
             slug="test-tags",
             allowed_tags=["dev", "review"],
         )
-        config_path = tmp_path / ".timetracker.toml"
+        config_path = tmp_path / ".timereg.toml"
         config_path.touch()
         project = auto_register_project(tmp_db, config, config_path, [])
         row = tmp_db.execute(
@@ -183,7 +183,7 @@ class TestAutoRegisterBudgetAndTags:
             slug="test-model",
             weekly_budget_hours=15.0,
         )
-        config_path = tmp_path / ".timetracker.toml"
+        config_path = tmp_path / ".timereg.toml"
         config_path.touch()
         auto_register_project(tmp_db, config, config_path, [])
         fetched = get_project(tmp_db, "test-model")

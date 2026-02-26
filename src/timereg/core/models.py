@@ -145,6 +145,7 @@ class SuggestedSplitEntry(BaseModel):
     project_slug: str
     project_name: str
     suggested_hours: float
+    weight: float
     commit_count: int
     total_insertions: int
     total_deletions: int
@@ -155,6 +156,7 @@ class AllProjectsFetchResult(BaseModel):
 
     date: str
     user: GitUser
+    total_hours: float
     projects: list[FetchResult] = Field(default_factory=list)
     suggested_split: list[SuggestedSplitEntry] = Field(default_factory=list)
 
@@ -252,7 +254,7 @@ class GlobalConfig(BaseModel):
 
 
 class ProjectConfig(BaseModel):
-    """Project config from .timetracker.toml."""
+    """Project config from .timereg.toml."""
 
     name: str
     slug: str
