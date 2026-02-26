@@ -14,7 +14,7 @@ from timereg.cli import entry_to_dict
 from timereg.cli.app import app, state
 from timereg.core.config import find_project_config, load_project_config
 from timereg.core.entries import list_entries
-from timereg.core.projects import auto_register_project, get_project
+from timereg.core.projects import auto_register_project, get_project, list_projects
 
 console = Console()
 
@@ -75,8 +75,18 @@ def list_cmd(
         typer.echo("No entries found.")
         return
 
+    # Build project name lookup when showing multiple projects
+    show_project = all_projects or project_id is None
+    project_names: dict[int, str] = {}
+    if show_project:
+        for p in list_projects(state.db):
+            if p.id is not None:
+                project_names[p.id] = p.name
+
     table = Table(title="Time Entries")
     table.add_column("ID", style="cyan", justify="right")
+    if show_project:
+        table.add_column("Project", style="dim")
     table.add_column("Date", style="green")
     table.add_column("Hours", style="yellow", justify="right")
     table.add_column("Summary")
@@ -88,8 +98,10 @@ def list_cmd(
 
     for entry in entries:
         tags_str = ", ".join(entry.tags) if entry.tags else ""
-        row = [
-            str(entry.id or ""),
+        row = [str(entry.id or "")]
+        if show_project:
+            row.append(project_names.get(entry.project_id, "?"))
+        row += [
             str(entry.date),
             f"{entry.hours:.2f}",
             entry.short_summary,

@@ -11,15 +11,19 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 import typer
+from rich.console import Console
+from rich.table import Table
 
 from timereg.cli import entry_to_dict
 from timereg.cli.app import app, state
 from timereg.core.config import find_project_config, load_project_config, no_config_message
-from timereg.core.entries import create_entry
+from timereg.core.entries import create_entry, list_entries
 from timereg.core.git import resolve_git_user
 from timereg.core.models import CommitInfo, GitUser
-from timereg.core.projects import auto_register_project, get_project
+from timereg.core.projects import auto_register_project, get_project, list_projects
 from timereg.core.time_parser import parse_time
+
+console = Console()
 
 
 @app.command()
@@ -151,18 +155,45 @@ def register(
             typer.echo(json.dumps([entry_to_dict(e) for e in result], indent=2))
         else:
             typer.echo(json.dumps(entry_to_dict(result), indent=2))
-    else:
-        if isinstance(result, list):
-            primary = result[0]
-            typer.echo(f"Registered {parsed_hours}h for {project.name} on {entry_date}")
-            typer.echo(f"  Entry ID: {primary.id}")
-            typer.echo(f"  Summary: {short_summary}")
-            typer.echo(f"  Peers: {len(result) - 1} peer entries created")
-        else:
-            typer.echo(f"Registered {parsed_hours}h for {project.name} on {entry_date}")
-            typer.echo(f"  Entry ID: {result.id}")
-            typer.echo(f"  Summary: {short_summary}")
-            if commit_hashes:
-                typer.echo(f"  Commits: {len(commit_hashes)}")
-            if tag_list:
-                typer.echo(f"  Tags: {', '.join(tag_list)}")
+        return
+
+    primary = result[0] if isinstance(result, list) else result
+    typer.echo(f"Registered {parsed_hours}h for {project.name} on {entry_date}")
+    typer.echo(f"  Entry ID: {primary.id}")
+    typer.echo(f"  Summary: {short_summary}")
+    if isinstance(result, list):
+        typer.echo(f"  Peers: {len(result) - 1} peer entries created")
+    if commit_hashes:
+        typer.echo(f"  Commits: {len(commit_hashes)}")
+    if tag_list:
+        typer.echo(f"  Tags: {', '.join(tag_list)}")
+
+    # Show today's entries across all projects
+    todays_entries = list_entries(db=state.db, date_filter=entry_date, all_projects=True)
+    if todays_entries:
+        project_names: dict[int, str] = {}
+        for p in list_projects(state.db):
+            if p.id is not None:
+                project_names[p.id] = p.name
+
+        typer.echo("")
+        table = Table(title=f"Today ({entry_date})")
+        table.add_column("ID", style="cyan", justify="right")
+        table.add_column("Project", style="dim")
+        table.add_column("Hours", style="yellow", justify="right")
+        table.add_column("Summary")
+        table.add_column("Tags", style="magenta")
+
+        for entry in todays_entries:
+            tags_str = ", ".join(entry.tags) if entry.tags else ""
+            table.add_row(
+                str(entry.id or ""),
+                project_names.get(entry.project_id, "?"),
+                f"{entry.hours:.2f}",
+                entry.short_summary,
+                tags_str,
+            )
+
+        total_hours = sum(e.hours for e in todays_entries)
+        console.print(table)
+        typer.echo(f"Total today: {total_hours:.2f}h")
