@@ -1,3 +1,8 @@
+---
+name: timereg
+description: Use when the user wants to register time, log hours, check time entries, or do anything related to time tracking. Trigger phrases include "registrer", "logg timer", "register time", "register Xh", "timereg", "how many hours", "hva har jeg logget", "vis timer", "ukesrapport", "status timer".
+---
+
 # TimeReg — Agent Skill
 
 You have access to the `timereg` CLI tool for time registration. Use it when the user asks to register time, check hours, or review time entries.
