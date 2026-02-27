@@ -331,7 +331,7 @@ def list_entries(
 
     where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
     rows = db.execute(
-        f"SELECT {_ENTRY_COLUMNS} FROM entries{where} ORDER BY date, created_at",
+        f"SELECT {_ENTRY_COLUMNS} FROM entries{where} ORDER BY date, project_id, created_at",
         tuple(params),
     ).fetchall()
     return [_row_to_entry(r) for r in rows]

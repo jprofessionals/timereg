@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections import defaultdict
 from datetime import date
 from typing import Annotated
 
@@ -112,6 +113,38 @@ def list_cmd(
             row.append(entry.long_summary or "")
         table.add_row(*row)
 
-    total_hours = sum(e.hours for e in entries)
     console.print(table)
-    typer.echo(f"\nTotal: {total_hours:.2f}h across {len(entries)} entries")
+
+    # Per-project per-day summary when showing multiple projects
+    if show_project:
+        # Aggregate hours: (date, project_name) -> total
+        day_project_hours: dict[date, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+        for entry in entries:
+            pname = project_names.get(entry.project_id, "?")
+            day_project_hours[entry.date][pname] += entry.hours
+
+        summary_table = Table(title="Summary")
+        summary_table.add_column("Date", style="green")
+        summary_table.add_column("Project", style="dim")
+        summary_table.add_column("Hours", style="yellow", justify="right")
+
+        grand_total = 0.0
+        for d in sorted(day_project_hours):
+            projects = day_project_hours[d]
+            day_total = 0.0
+            for pname in sorted(projects):
+                hours = projects[pname]
+                summary_table.add_row(str(d), pname, f"{hours:.2f}")
+                day_total += hours
+            summary_table.add_row(
+                f"[bold]{d}[/bold]", "[bold]Total[/bold]", f"[bold]{day_total:.2f}[/bold]"
+            )
+            summary_table.add_section()
+            grand_total += day_total
+
+        console.print()
+        console.print(summary_table)
+        typer.echo(f"\nTotal: {grand_total:.2f}h across {len(entries)} entries")
+    else:
+        total_hours = sum(e.hours for e in entries)
+        typer.echo(f"\nTotal: {total_hours:.2f}h across {len(entries)} entries")
